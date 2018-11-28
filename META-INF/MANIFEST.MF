@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Finite_State_Machine
+Bundle-SymbolicName: Finite_State_Machine;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: edu.buffalo.cse.jive.finiteStateMachine.Activator
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.core.resources
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-ActivationPolicy: lazy
+Bundle-ClassPath: lib/plantuml.jar,
+ .
+Import-Package: net.sourceforge.plantuml
