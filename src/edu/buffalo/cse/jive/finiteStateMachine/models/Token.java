@@ -39,6 +39,7 @@ public class Token {
 	public static final int OR_OP = 31;
 	public static final int NOT_OP = 32;
 	public static final int EDGE_OP = 33;
+	public static final int F_OP = 34;
 
 	private static String[] lexemes = { ";", ",", "+", "-", "*", "/", "=", ">", "<", "<=", ">=", "==", "!=", "(", ")",
 			"{", "}", "id", "int_lit", "if", "int", "else", "while", "end", "return" };

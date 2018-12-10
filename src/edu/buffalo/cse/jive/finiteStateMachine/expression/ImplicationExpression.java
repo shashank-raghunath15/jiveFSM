@@ -38,16 +38,23 @@ public class ImplicationExpression extends Expression implements IBinaryExpressi
 	public void setExpressionB(Expression expressionB) {
 		this.expressionB = expressionB;
 	}
-	
+
 	public boolean evaluate(UnaryContext ct) {
-		boolean isA = expressionA.evaluate(ct);
-		boolean isB = expressionB.evaluate(ct);
-		//System.out.println("expr A:"+isA+"  expr B:"+isB);
-		if(isA && isB)
-			return true;
-		else if(!isA)
-			return true;
-		return false;
+		if (expressionA.evaluate(ct)) {
+			if (expressionB.evaluate(ct)) {
+				return true;
+			}
+			return false;
+		}
+		return true;
+		// boolean isA = expressionA.evaluate(ct);
+		// boolean isB = expressionB.evaluate(ct);
+		// //System.out.println("expr A:"+isA+" expr B:"+isB);
+		// if(isA && isB)
+		// return true;
+		// else if(!isA)
+		// return true;
+		// return false;
 	}
 
 	@Override

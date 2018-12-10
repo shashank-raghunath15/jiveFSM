@@ -8,17 +8,23 @@ public class UnaryContext {
 	protected Map<String, Integer> variableLookup;
 	public State state2;
 
-	public UnaryContext(Map<String, Integer> variableNameLookup, State node, State previousState) {
-		this.state = node;
+	public UnaryContext(Map<String, Integer> variableNameLookup, State previousState, State currentState) {
+		this.state = previousState;
 		this.variableLookup = variableNameLookup;
-		this.state2 = previousState;
+		this.state2 = currentState;
 	}
 
 	public String getValue(String varname) {
+		if (varname.contains("\'")) {
+			varname = varname.substring(0, varname.length()-1);
+			int index = variableLookup.get(varname);
+			if (state == null)
+				return "";
+			return state2.keyVar.get(index);
+		}
 		int index = variableLookup.get(varname);
 		if (state == null)
 			return "";
-
 		return state.keyVar.get(index);
 	}
 }

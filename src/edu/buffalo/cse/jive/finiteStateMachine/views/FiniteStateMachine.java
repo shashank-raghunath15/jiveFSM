@@ -71,11 +71,11 @@ public class FiniteStateMachine extends ViewPart {
 	private Combo attributeList;
 	private Button browseButton;
 	private Button listenButton;
+	private Button stopButton;
 	private Button exportButton;
 	Composite imageComposite;
 	Composite image2Composite;
 	private Image image;
-
 	public boolean horizontal;
 	public boolean vertical;
 
@@ -155,7 +155,8 @@ public class FiniteStateMachine extends ViewPart {
 
 		listenButton = new Button(browseComposite, SWT.PUSH);
 		listenButton.setText("Listen");
-
+		stopButton = new Button(browseComposite, SWT.PUSH);
+		stopButton.setText("Stop");
 		browseButton = new Button(browseComposite, SWT.PUSH);
 		browseButton.setText("Browse");
 
@@ -477,22 +478,29 @@ public class FiniteStateMachine extends ViewPart {
 				endButtonAction(e);
 			}
 		});
+		stopButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				Job.getJobManager().cancel("MonitorPortJob");
+			}
+		});
 	}
 
 	private void listenButtonAction(SelectionEvent e) {
 		// Try 5 - Using JobsAPI
 
-		RuntimeMonitor rm = new RuntimeMonitor(kvText, statusLineManager, propertyText);
+		RuntimeMonitor rm = new RuntimeMonitor(kvText, statusLineManager, propertyText, display, statusLabel);
 		Job job = new Job("MonitorPortJob") {
-			protected IStatus run(IProgressMonitor monitor) {
-				// monitor.beginTask("Monitoring Started", 10);
+			ServerSocket server;
+			Socket socket;
 
+			protected IStatus run(IProgressMonitor monitor) {
 				String line = "";
 				try {
-					ServerSocket server = new ServerSocket(5000);
+					server = new ServerSocket(5000);
 					System.out.println("Server started at port 5000");
 
-					Socket socket = server.accept();
+					socket = server.accept();
 					System.out.println("Client accepted");
 					DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream(), 131072));
 					while (true) {
@@ -503,8 +511,8 @@ public class FiniteStateMachine extends ViewPart {
 									break;
 								line = line.replace("\"", "").trim();
 								if (rm.recordFieldWrite(line.trim()))
-									rm.generateSVG(rm.exportToPlantUML(true), display, hcanvasText, vcanvasText,
-											browser, imageComposite, rootScrollComposite, mainComposite);
+									rm.generateSVG(rm.exportToPlantUML(true), hcanvasText, vcanvasText, browser,
+											imageComposite, rootScrollComposite, mainComposite);
 							} catch (IOException i) {
 								i.printStackTrace();
 								break;
@@ -525,20 +533,34 @@ public class FiniteStateMachine extends ViewPart {
 				} catch (IOException ioe) {
 					System.out.println("Connection problem");
 					updateUI("Error:Connection problem");
-
-					// ioe.printStackTrace();
 					System.out.println(line);
 				}
-
-				// monitor.done();
 				return Status.OK_STATUS;
+			}
+
+			@Override
+			protected void canceling() {
+				super.canceling();
+				try {
+					System.out.println("Server Closed");
+					socket.close();
+					server.close();
+					rm.kill();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+
+			@Override
+			public boolean belongsTo(Object family) {
+				return family.equals("MonitorPortJob");
 			}
 		};
 		job.setUser(true);
 		job.schedule();
 	}
 
-	private void updateUI(String message) {
+	void updateUI(String message) {
 		display.asyncExec(new Runnable() {
 
 			@Override

@@ -12,7 +12,9 @@ import edu.buffalo.cse.jive.finiteStateMachine.expression.literal.StringValueExp
 import edu.buffalo.cse.jive.finiteStateMachine.expression.logical.AndExpression;
 import edu.buffalo.cse.jive.finiteStateMachine.expression.logical.OrExpression;
 import edu.buffalo.cse.jive.finiteStateMachine.expression.relational.EqualityExpression;
+import edu.buffalo.cse.jive.finiteStateMachine.expression.relational.GreaterThanEqualToExpression;
 import edu.buffalo.cse.jive.finiteStateMachine.expression.relational.GreaterThanExpression;
+import edu.buffalo.cse.jive.finiteStateMachine.expression.relational.LessThanEqualToExpression;
 import edu.buffalo.cse.jive.finiteStateMachine.expression.relational.LessThanExpression;
 import edu.buffalo.cse.jive.finiteStateMachine.expression.relational.NotEqualityExpression;
 import edu.buffalo.cse.jive.finiteStateMachine.models.Tokenizer;
@@ -29,6 +31,8 @@ public class ExpressionFactory {
 			return new AExpression();
 		case "G":
 			return new GExpression();
+		case "F":
+			return new FExpression();
 		case "+":
 			return new AdditionExpression();
 		case "-":
@@ -53,6 +57,10 @@ public class ExpressionFactory {
 			return new GreaterThanExpression();
 		case "<":
 			return new LessThanExpression();
+		case "<=":
+			return new LessThanEqualToExpression();
+		case ">=":
+			return new GreaterThanEqualToExpression();
 		case "true":
 			return new BooleanValueExpression(Boolean.TRUE);
 		case "false":

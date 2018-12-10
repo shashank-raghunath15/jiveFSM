@@ -26,8 +26,8 @@ public class Operators {
 		map.put("&&", 17);
 		map.put("==", 17);
 		map.put("!=", 17);
-		map.put(">=", 9);
-		map.put("<=", 9);
+		map.put(">=", 17);
+		map.put("<=", 17);
 		map.put("<", 17);
 		map.put(">", 17);
 		map.put("!", 14);
@@ -35,6 +35,7 @@ public class Operators {
 		map.put("=>", 18);
 		map.put("A", 18);
 		map.put("G", 18);
+		map.put("F", 18);
 		OPERATOR_PRECEDENCE = Collections.unmodifiableMap(map);
 	}
 
@@ -43,7 +44,7 @@ public class Operators {
 	}
 
 	public static boolean isUnaryOperator(String input) {
-		return Arrays.asList("A", "G", "!").contains(input);
+		return Arrays.asList("A", "G", "F", "!").contains(input);
 	}
 
 	public static boolean isBinaryOperator(String input) {

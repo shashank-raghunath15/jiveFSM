@@ -1,4 +1,5 @@
 package edu.buffalo.cse.jive.finiteStateMachine.models;
+
 /**
  * @author Bharat Jayaraman
  * @email bharat@buffalo.edu
@@ -149,6 +150,10 @@ public class Lexer {
 				nextToken = Token.G_OP;
 				ch = buffer.getChar();
 				break;
+			case 'F':
+				nextToken = Token.F_OP;
+				ch = buffer.getChar();
+				break;
 			case '&':
 				ch = buffer.getChar();
 				nextToken = Token.AND_OP;
@@ -173,7 +178,7 @@ public class Lexer {
 		do {
 			ident = ident + ch;
 			ch = buffer.getChar();
-		} while (Character.isLetter(ch) || Character.isDigit(ch));
+		} while (Character.isLetter(ch) || Character.isDigit(ch) || ch == '\'');
 		return ident;
 	}
 
