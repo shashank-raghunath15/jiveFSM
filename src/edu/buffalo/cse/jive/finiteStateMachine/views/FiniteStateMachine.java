@@ -1,15 +1,19 @@
 package edu.buffalo.cse.jive.finiteStateMachine.views;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
@@ -51,10 +55,18 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.part.ViewPart;
 
-import edu.buffalo.cse.jive.finiteStateMachine.models.KeyAttribute;
-import edu.buffalo.cse.jive.finiteStateMachine.models.RuntimeMonitor;
-import edu.buffalo.cse.jive.finiteStateMachine.models.State;
-import edu.buffalo.cse.jive.finiteStateMachine.models.StateDiagram;
+import edu.buffalo.cse.jive.finiteStateMachine.expression.Expression;
+import edu.buffalo.cse.jive.finiteStateMachine.models.Attribute;
+import edu.buffalo.cse.jive.finiteStateMachine.models.InputFileParser;
+import edu.buffalo.cse.jive.finiteStateMachine.models.OfflineMonitor;
+import edu.buffalo.cse.jive.finiteStateMachine.models.OnlineMonitor;
+import edu.buffalo.cse.jive.finiteStateMachine.models.TransitionBuilder;
+import edu.buffalo.cse.jive.finiteStateMachine.parser.Parser;
+import edu.buffalo.cse.jive.finiteStateMachine.parser.ParserImpl;
+import net.sourceforge.plantuml.FileFormat;
+import net.sourceforge.plantuml.FileFormatOption;
+import net.sourceforge.plantuml.SourceStringReader;
+import net.sourceforge.plantuml.core.DiagramDescription;
 
 public class FiniteStateMachine extends ViewPart {
 
@@ -86,28 +98,12 @@ public class FiniteStateMachine extends ViewPart {
 	private Button addButton;
 	private Button resetButton;
 	private Button drawButton;
-	private Button ssChkBox; // For step-by-step construction
-	private Button startButton;
-	private Button prevButton;
-	private Button nextButton;
-	private Button endButton;
-	private Button startButton2;
-	private Button prevButton2;
-	private Button nextButton2;
-	private Button endButton2;
-	private Button[] granularity;
-	private Label grLabel;
-	private Label repeatLabel;
-	private Text repeatText;
-	private Button transitionCount;
-	private Button aRun;
+	private Button autoDraw;
 
-	StateDiagram sd;
 	private Label kvSyntax;
 	private Label kvSpace;
 	private Label paSpace; // For predicate abstraction
 	private Label paSyntax; // For predicate abstraction
-	private int count;
 
 	Browser browser; // For svg support
 	private Label canvasLabel;
@@ -118,6 +114,9 @@ public class FiniteStateMachine extends ViewPart {
 	String svg;
 	private Label propertyLabel;
 	private Text propertyText;
+
+	public TransitionBuilder transitionBuilder;
+	private InputFileParser inputFileParser;
 
 	/**
 	 * The constructor.
@@ -213,64 +212,14 @@ public class FiniteStateMachine extends ViewPart {
 		exportButton.setText("Export");
 		exportButton.setToolTipText("Exports the state diagram");
 
-		ssChkBox = new Button(evComposite, SWT.CHECK);
-		ssChkBox.setSelection(false);
-		ssChkBox.setText("Step-by-step");
-
-		startButton = new Button(evComposite, SWT.PUSH);
-		startButton.setText("Start");
-		startButton.setToolTipText("Start state");
-		startButton.setEnabled(false);
-
-		prevButton = new Button(evComposite, SWT.PUSH);
-		prevButton.setText("Prev");
-		prevButton.setToolTipText("Previous state");
-		prevButton.setEnabled(false);
-
-		nextButton = new Button(evComposite, SWT.PUSH);
-		nextButton.setText("Next");
-		nextButton.setToolTipText("Next state");
-		nextButton.setEnabled(false);
-
-		endButton = new Button(evComposite, SWT.PUSH);
-		endButton.setText(" End ");
-		endButton.setToolTipText("End state");
-		endButton.setEnabled(false);
-
 		// Granularity composite
 		Composite grComposite = new Composite(mainComposite, SWT.NONE);
 		grComposite.setLayout(new GridLayout(10, false));
 		grComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
 
-		grLabel = new Label(grComposite, SWT.FILL);
-		grLabel.setText("Granularity");
-
-		granularity = new Button[2];
-
-		granularity[0] = new Button(grComposite, SWT.RADIO);
-		granularity[0].setSelection(true);
-		granularity[0].setText("Field");
-
-		granularity[1] = new Button(grComposite, SWT.RADIO);
-		granularity[1].setSelection(false);
-		granularity[1].setText("Method");
-
-		repeatLabel = new Label(grComposite, SWT.FILL);
-		repeatLabel.setText("       Mininmum Field Updates");
-
-		repeatText = new Text(grComposite, SWT.BORDER | SWT.FILL);
-		GridData gd6 = new GridData();
-		gd6.widthHint = 25;
-		repeatText.setLayoutData(gd6);
-		repeatText.setText("1");
-
-		transitionCount = new Button(grComposite, SWT.CHECK);
-		transitionCount.setSelection(true);
-		transitionCount.setText("Count transitions");
-
-		aRun = new Button(grComposite, SWT.CHECK);
-		aRun.setSelection(false);
-		aRun.setText("Run");
+		autoDraw = new Button(grComposite, SWT.CHECK);
+		autoDraw.setSelection(false);
+		autoDraw.setText("Auto Draw");
 
 		// Predicate abstraction composite
 		Composite paComposite = new Composite(mainComposite, SWT.NONE);
@@ -320,26 +269,6 @@ public class FiniteStateMachine extends ViewPart {
 		Composite ev2Composite = new Composite(mainComposite, SWT.NONE);
 		ev2Composite.setLayout(new GridLayout(8, false));
 		ev2Composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
-
-		startButton2 = new Button(ev2Composite, SWT.PUSH);
-		startButton2.setText("Start");
-		startButton2.setToolTipText("Start state");
-		startButton2.setEnabled(false);
-
-		prevButton2 = new Button(ev2Composite, SWT.PUSH);
-		prevButton2.setText("Prev");
-		prevButton2.setToolTipText("Previous state");
-		prevButton2.setEnabled(false);
-
-		nextButton2 = new Button(ev2Composite, SWT.PUSH);
-		nextButton2.setText("Next");
-		nextButton2.setToolTipText("Next state");
-		nextButton2.setEnabled(false);
-
-		endButton2 = new Button(ev2Composite, SWT.PUSH);
-		endButton2.setText(" End ");
-		endButton2.setToolTipText("End state");
-		endButton2.setEnabled(false);
 
 		// Added for SVG support test
 
@@ -416,68 +345,6 @@ public class FiniteStateMachine extends ViewPart {
 			}
 		});
 
-		ssChkBox.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				ssChkBoxAction(e);
-			}
-		});
-
-		startButton.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				startButtonAction(e);
-			}
-		});
-
-		prevButton.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				prevButtonAction(e);
-			}
-		});
-
-		nextButton.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				nextButtonAction(e);
-			}
-		});
-
-		endButton.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				endButtonAction(e);
-			}
-		});
-
-		startButton2.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				startButtonAction(e);
-			}
-		});
-
-		prevButton2.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				prevButtonAction(e);
-			}
-		});
-
-		nextButton2.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				nextButtonAction(e);
-			}
-		});
-
-		endButton2.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				endButtonAction(e);
-			}
-		});
 		stopButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -486,10 +353,64 @@ public class FiniteStateMachine extends ViewPart {
 		});
 	}
 
-	private void listenButtonAction(SelectionEvent e) {
-		// Try 5 - Using JobsAPI
+	private List<Attribute> readAttributes(Text attributes) {
+		List<Attribute> keyAttributes;
+		if (attributes != null && attributes.getText().length() > 0) {
+			keyAttributes = new ArrayList<Attribute>();
+			String selected = attributes.getText();
+			for (String attribute : selected.split(",")) {
+				String[] values = attribute.trim().split("->");
+				keyAttributes.add(new Attribute(values[0], values[1]));
+			}
+			return keyAttributes;
+		}
+		return null;
+	}
 
-		RuntimeMonitor rm = new RuntimeMonitor(kvText, statusLineManager, propertyText, display, statusLabel);
+	private List<Expression> parseExpressions(Text propertyText) {
+		if (propertyText != null && propertyText.getText().length() > 0) {
+			Parser parser = new ParserImpl();
+			String properties = propertyText.getText().trim();
+			return parser.parse(properties.split(propertyText.getLineDelimiter()));
+		}
+		return null;
+	}
+
+	public void generateSVG(String source, Text hcanvasText, Text vcanvasText, Browser browser,
+			Composite imageComposite, ScrolledComposite rootScrollComposite, Composite mainComposite) {
+		SourceStringReader reader = new SourceStringReader(source);
+		final ByteArrayOutputStream os = new ByteArrayOutputStream();
+		try {
+			@SuppressWarnings({ "unused" })
+			DiagramDescription description = reader.outputImage(os, new FileFormatOption(FileFormat.SVG));
+			os.close();
+		} catch (IOException ioe) {
+			System.out.println("Unable to generate SVG");
+		}
+		String svg = new String(os.toByteArray(), Charset.forName("UTF-8"));
+		GridData browserLData = new GridData();
+		display.asyncExec(new Runnable() {
+
+			@Override
+			public void run() {
+				browserLData.widthHint = Integer.parseInt(hcanvasText.getText()); // 1000;
+				browserLData.heightHint = Integer.parseInt(vcanvasText.getText()); // 600;
+				browser.setLayoutData(browserLData);
+				browser.setText(svg);
+				imageComposite.pack();
+				rootScrollComposite.setMinSize(mainComposite.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+
+			}
+		});
+	}
+
+	private void listenButtonAction(SelectionEvent e) {
+
+		ConcurrentLinkedQueue<String> incomingStates = new ConcurrentLinkedQueue<String>();
+		transitionBuilder = new TransitionBuilder();
+		OnlineMonitor runtimeMonitor = new OnlineMonitor(incomingStates, readAttributes(kvText),
+				parseExpressions(propertyText), transitionBuilder);
+		boolean aDraw = autoDraw.getSelection();
 		Job job = new Job("MonitorPortJob") {
 			ServerSocket server;
 			Socket socket;
@@ -504,22 +425,16 @@ public class FiniteStateMachine extends ViewPart {
 					System.out.println("Client accepted");
 					DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream(), 131072));
 					while (true) {
-						if (in.available() > 0) {
-							try {
-								line = in.readUTF();
-								if (line.contains("System End"))
-									break;
-								line = line.replace("\"", "").trim();
-								if (rm.recordFieldWrite(line.trim()))
-									rm.generateSVG(rm.exportToPlantUML(true), hcanvasText, vcanvasText, browser,
+						try {
+							if (in.available() > 0) {
+								incomingStates.offer(in.readUTF().replace("\"", "").trim());
+								if (aDraw)
+									generateSVG(transitionBuilder.getTransitions(), hcanvasText, vcanvasText, browser,
 											imageComposite, rootScrollComposite, mainComposite);
-							} catch (IOException i) {
-								i.printStackTrace();
-								break;
-							} catch (StringIndexOutOfBoundsException e2) {
-								e2.printStackTrace();
 							}
-
+						} catch (IOException e) {
+							System.out.println("Job Stopped");
+							break;
 						}
 					}
 					socket.close();
@@ -545,7 +460,6 @@ public class FiniteStateMachine extends ViewPart {
 					System.out.println("Server Closed");
 					socket.close();
 					server.close();
-					rm.kill();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -558,6 +472,7 @@ public class FiniteStateMachine extends ViewPart {
 		};
 		job.setUser(true);
 		job.schedule();
+		new Thread(runtimeMonitor).start();
 	}
 
 	void updateUI(String message) {
@@ -571,7 +486,6 @@ public class FiniteStateMachine extends ViewPart {
 	}
 
 	private void browseButtonAction(SelectionEvent e) {
-
 		if (image != null) {
 			if (!image.isDisposed()) {
 				System.out.println("Image disposedx");
@@ -580,10 +494,8 @@ public class FiniteStateMachine extends ViewPart {
 		}
 
 		statusLineManager.setMessage(null);
-
 		FileDialog fd = new FileDialog(new Shell(Display.getCurrent(), SWT.OPEN));
 		fd.setText("Open CSV File");
-
 		String[] filterExtensions = { "*.csv" };
 		fd.setFilterExtensions(filterExtensions);
 
@@ -591,19 +503,15 @@ public class FiniteStateMachine extends ViewPart {
 		if (fileName == null)
 			return;
 		fileText.setText(fileName);
-
-		sd = new StateDiagram();
-		attributeList.removeAll(); // Reset dropdown box
+		attributeList.removeAll();
 		kvText.setText("");
 		paText.setText("");
+		inputFileParser = new InputFileParser(fileName);
+		Set<Attribute> allAttributes = inputFileParser.getAllAttributes();
+		for (Attribute attribute : allAttributes) {
+			attributeList.add(attribute.toString());
+		}
 		drawButton.setEnabled(true);
-		ssChkBox.setSelection(false);
-		aRun.setSelection(false);
-
-		sd.setTraceFile(fileName); // Get the file name
-		sd.readEvents(Integer.MAX_VALUE, repeatText, attributeList, granularity);
-		sd.printAttributes();
-
 		statusLineManager.setMessage("Loaded " + fileName);
 	}
 
@@ -650,45 +558,14 @@ public class FiniteStateMachine extends ViewPart {
 		}
 		attributeList.setText("");
 	}
-
+	
 	private void drawButtonAction(SelectionEvent e) {
-		sd.setKeys(new ArrayList<KeyAttribute>()); // Reallocate key attributes
-		sd.setStates(new ArrayList<State>());
-		sd.setPaStates(new ArrayList<State>());
-		sd.setTransitions(new LinkedHashMap<String, Integer>()); // Reset transitions
-
-		if (kvText.getText().equals(""))
-			return;
-
-		sd.readKeyAttributes(kvText, statusLineManager);
-
-		sd.createStates();
-		if (granularity[1].getSelection()) // If method granularity
-			sd.methodConsolidation();
-
-		sd.abstraction(paText);
-
-		if (aRun.getSelection()) {
-			// sd.generateImage(sd.exportRun(Integer.MAX_VALUE));
-			sd.generateSVG(sd.exportRun(Integer.MAX_VALUE), browser, hcanvasText, vcanvasText, rootScrollComposite,
-					mainComposite, imageComposite);
-			// sd.displayImage();
-			statusLineManager.setMessage("A run for " + kvText.getText());
-		} else {
-			sd.createTransitions(Integer.MAX_VALUE);
-			if (transitionCount.getSelection()) {
-				// sd.generateImage(sd.exportToPlantUML(true));
-				sd.generateSVG(sd.exportToPlantUML(true), browser, hcanvasText, vcanvasText, rootScrollComposite,
-						mainComposite, imageComposite);
-			} else {
-				// sd.generateImage(sd.exportToPlantUML(false));
-				sd.generateSVG(sd.exportToPlantUML(false), browser, hcanvasText, vcanvasText, rootScrollComposite,
-						mainComposite, imageComposite);
-			}
-			// sd.displayImage();
-
-			statusLineManager.setMessage("Finite State Model for " + kvText.getText());
-		}
+		this.transitionBuilder = new TransitionBuilder();
+		new OfflineMonitor(inputFileParser.getEvents(), parseExpressions(propertyText), readAttributes(kvText),
+				transitionBuilder);
+		generateSVG(transitionBuilder.getTransitions(), hcanvasText, vcanvasText, browser, imageComposite,
+				rootScrollComposite, mainComposite);
+		statusLineManager.setMessage("Finite State Model for " + kvText.getText());
 	}
 
 	private void resetButtonAction(SelectionEvent e) {
@@ -696,174 +573,9 @@ public class FiniteStateMachine extends ViewPart {
 		paText.setText("");
 	}
 
-	private void ssChkBoxAction(SelectionEvent e) {
-		if (ssChkBox.getSelection()) {
-
-			drawButton.setEnabled(false);
-			prevButton.setEnabled(false);
-			prevButton2.setEnabled(false);
-			startButton.setEnabled(true);
-			startButton2.setEnabled(true);
-		} else {
-			drawButton.setEnabled(true);
-			startButton.setEnabled(false);
-			startButton2.setEnabled(false);
-			prevButton.setEnabled(false);
-			prevButton2.setEnabled(false);
-			nextButton.setEnabled(false);
-			nextButton2.setEnabled(false);
-			endButton.setEnabled(false);
-			endButton2.setEnabled(false);
-		}
-	}
-
-	private void startButtonAction(SelectionEvent e) {
-
-		sd.setKeys(new ArrayList<KeyAttribute>()); // Reallocate key attributes
-		sd.setStates(new ArrayList<State>());
-		sd.setPaStates(new ArrayList<State>());
-		sd.setTransitions(new LinkedHashMap<String, Integer>()); // Reset transitions
-		sd.setAllTransitions(new ArrayList<String>());
-		sd.readKeyAttributes(kvText, statusLineManager);
-		sd.printKeyAttributes();
-
-		sd.createStates();
-		if (granularity[1].getSelection()) // If method granularity
-			sd.methodConsolidation();
-
-		sd.abstraction(paText);
-
-		count = 0;
-		if (aRun.getSelection()) {
-			// sd.generateImage(sd.exportRun(count));
-			sd.generateSVG(sd.exportRun(count), browser, hcanvasText, vcanvasText, rootScrollComposite, mainComposite,
-					imageComposite);
-			// sd.displayImage();
-			statusLineManager.setMessage("A partial run for " + kvText.getText());
-		} else {
-			sd.createTransitions(count);
-			if (transitionCount.getSelection()) {
-				// sd.generateImage(sd.exportToPlantUML(true));
-				sd.generateSVG(sd.exportToPlantUML(true), browser, hcanvasText, vcanvasText, rootScrollComposite,
-						mainComposite, imageComposite);
-			} else {
-				// sd.generateImage(sd.exportToPlantUML(false));
-				sd.generateSVG(sd.exportToPlantUML(false), browser, hcanvasText, vcanvasText, rootScrollComposite,
-						mainComposite, imageComposite);
-			}
-			// sd.displayImage();
-
-			statusLineManager.setMessage("Partial State Diagram for " + kvText.getText());
-		}
-
-		prevButton.setEnabled(false);
-		prevButton2.setEnabled(false);
-		nextButton.setEnabled(true);
-		nextButton2.setEnabled(true);
-		endButton.setEnabled(true);
-		endButton2.setEnabled(true);
-	}
-
-	private void prevButtonAction(SelectionEvent e) {
-		if (count > 0) {
-			nextButton.setEnabled(true);
-			nextButton2.setEnabled(true);
-		}
-
-		if (aRun.getSelection()) {
-			// sd.generateImage(sd.exportRun(--count));
-			sd.generateSVG(sd.exportRun(--count), browser, hcanvasText, vcanvasText, rootScrollComposite, mainComposite,
-					imageComposite);
-			// sd.displayImage();
-			statusLineManager.setMessage("A partial run for " + kvText.getText());
-		} else {
-			sd.createTransitions(--count);
-			if (transitionCount.getSelection()) {
-				// sd.generateImage(sd.exportToPlantUML(true));
-				sd.generateSVG(sd.exportToPlantUML(true), browser, hcanvasText, vcanvasText, rootScrollComposite,
-						mainComposite, imageComposite);
-			} else {
-				// sd.generateImage(sd.exportToPlantUML(false));
-				sd.generateSVG(sd.exportToPlantUML(false), browser, hcanvasText, vcanvasText, rootScrollComposite,
-						mainComposite, imageComposite);
-			}
-			// sd.displayImage();
-
-			statusLineManager.setMessage("Partial State Diagram for " + kvText.getText());
-		}
-
-		if (count <= 0) {
-			prevButton.setEnabled(false);
-			prevButton2.setEnabled(false);
-		}
-	}
-
-	private void nextButtonAction(SelectionEvent e) {
-		if (count < sd.getPaStates().size() - 1) {
-			prevButton.setEnabled(true);
-			prevButton2.setEnabled(true);
-		}
-
-		if (aRun.getSelection()) {
-			// sd.generateImage(sd.exportRun(++count));
-			sd.generateSVG(sd.exportRun(++count), browser, hcanvasText, vcanvasText, rootScrollComposite, mainComposite,
-					imageComposite);
-			// sd.displayImage();
-			statusLineManager.setMessage("A partial run for " + kvText.getText());
-		} else {
-			sd.createTransitions(++count);
-			if (transitionCount.getSelection()) {
-				// sd.generateImage(sd.exportToPlantUML(true));
-				sd.generateSVG(sd.exportToPlantUML(true), browser, hcanvasText, vcanvasText, rootScrollComposite,
-						mainComposite, imageComposite);
-			} else {
-				sd.generateSVG(sd.exportToPlantUML(false), browser, hcanvasText, vcanvasText, rootScrollComposite,
-						mainComposite, imageComposite);
-				// sd.generateImage(sd.exportToPlantUML(false));
-			}
-			// sd.displayImage();
-
-			statusLineManager.setMessage("Partial State Diagram for " + kvText.getText());
-		}
-
-		if (count >= sd.getPaStates().size() - 1) {
-			nextButton.setEnabled(false);
-			nextButton2.setEnabled(false);
-		}
-	}
-
-	private void endButtonAction(SelectionEvent e) {
-		count = sd.getPaStates().size() - 1;
-
-		if (aRun.getSelection()) {
-			// sd.generateImage(sd.exportRun(Integer.MAX_VALUE));
-			sd.generateSVG(sd.exportRun(Integer.MAX_VALUE), browser, hcanvasText, vcanvasText, rootScrollComposite,
-					mainComposite, imageComposite);
-			// sd.displayImage();
-			statusLineManager.setMessage("A partial run for " + kvText.getText());
-		} else {
-			sd.createTransitions(Integer.MAX_VALUE);
-			if (transitionCount.getSelection()) {
-				// sd.generateImage(sd.exportToPlantUML(true));
-				sd.generateSVG(sd.exportToPlantUML(true), browser, hcanvasText, vcanvasText, rootScrollComposite,
-						mainComposite, imageComposite);
-			} else {
-				sd.generateSVG(sd.exportToPlantUML(false), browser, hcanvasText, vcanvasText, rootScrollComposite,
-						mainComposite, imageComposite);
-				// sd.generateImage(sd.exportToPlantUML(false));
-			}
-			// sd.displayImage();
-
-			statusLineManager.setMessage("Partial State Diagram for " + kvText.getText());
-		}
-
-		prevButton.setEnabled(true);
-		prevButton2.setEnabled(true);
-		nextButton.setEnabled(false);
-		nextButton2.setEnabled(false);
-	}
-
+	@Override
 	public void setFocus() {
-		// viewer.getControl().setFocus();
+		// TODO Auto-generated method stub
+		
 	}
 }

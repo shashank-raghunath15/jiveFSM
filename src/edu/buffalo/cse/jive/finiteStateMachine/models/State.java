@@ -126,4 +126,13 @@ public class State implements Serializable {
 		}
 		return this;
 	}
+
+	@Override
+	public int hashCode() {
+		int hash = 0;
+		for (String key : keyVar) {
+			hash *= key.hashCode();
+		}
+		return hash;
+	}
 }

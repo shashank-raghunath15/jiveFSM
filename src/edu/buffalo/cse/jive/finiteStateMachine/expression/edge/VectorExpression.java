@@ -5,7 +5,6 @@ import java.util.List;
 
 import edu.buffalo.cse.jive.finiteStateMachine.expression.Expression;
 import edu.buffalo.cse.jive.finiteStateMachine.expression.literal.ValueExpression;
-import edu.buffalo.cse.jive.finiteStateMachine.models.State;
 import edu.buffalo.cse.jive.finiteStateMachine.models.UnaryContext;
 
 public class VectorExpression extends ValueExpression {

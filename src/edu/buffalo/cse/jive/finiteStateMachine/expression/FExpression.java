@@ -3,7 +3,7 @@
  */
 package edu.buffalo.cse.jive.finiteStateMachine.expression;
 
-import edu.buffalo.cse.jive.finiteStateMachine.models.RuntimeMonitor;
+import edu.buffalo.cse.jive.finiteStateMachine.models.OnlineMonitor;
 import edu.buffalo.cse.jive.finiteStateMachine.models.UnaryContext;
 
 /**
@@ -44,9 +44,9 @@ public class FExpression extends Expression {
 	@Override
 	public boolean evaluate(UnaryContext ct) {
 		if (expression.evaluate(ct)) {
-			RuntimeMonitor.fExpressions.remove(this);
+			OnlineMonitor.fExpressions.remove(this);
 		} else {
-			RuntimeMonitor.fExpressions.add(this);
+			OnlineMonitor.fExpressions.add(this);
 		}
 		return true;
 	}
