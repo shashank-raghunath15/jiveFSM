@@ -91,7 +91,7 @@ public class Operators {
 		case 25:
 			return "G";
 		case 26:
-			return "A";
+			return "F";
 		case 27:
 			return "->";
 		case 28:

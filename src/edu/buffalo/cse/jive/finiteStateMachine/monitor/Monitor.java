@@ -1,6 +1,5 @@
 package edu.buffalo.cse.jive.finiteStateMachine.monitor;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -23,7 +22,6 @@ public abstract class Monitor implements Runnable {
 	private BlockingQueue<Event> source;
 	private Map<State, Set<State>> states;
 	private State rootState;
-	public static List<Expression> fExpressions = new ArrayList<Expression>();
 	private State previousState;
 
 	public Monitor(Set<String> keyFields, BlockingQueue<Event> source) {
@@ -57,21 +55,15 @@ public abstract class Monitor implements Runnable {
 	private boolean validate(State current, State next, List<Expression> expressions) {
 		boolean valid = true;
 		for (Expression expression : expressions) {
-			if (!expression.evaluate(new Context(current, next))) {
+			if (!expression.evaluate(new Context(current, next, states))) {
 				valid = false;
 				break;
-			}
-		}
-		for (Expression expression : fExpressions) {
-			if (!expression.evaluate(new Context(current, next))) {
-				fExpressions.remove(expression);
 			}
 		}
 		return valid;
 	}
 
 	public void buildTransitions(TransitionBuilder transitionBuilder) {
-		printStates();
 		transitionBuilder.addInitialState(rootState);
 		buildTransitions(rootState, new HashSet<Pair<State, State>>(), transitionBuilder);
 	}
@@ -107,6 +99,7 @@ public abstract class Monitor implements Runnable {
 
 	protected void printStates() {
 		for (State key : states.keySet()) {
+			System.out.print(key + " : ");
 			for (State state : states.get(key)) {
 				System.out.print(state + " ");
 			}

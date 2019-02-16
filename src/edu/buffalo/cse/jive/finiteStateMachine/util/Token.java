@@ -32,7 +32,7 @@ public class Token {
 	public static final int KEY_END = 23;
 	public static final int KEY_RETURN = 24;
 	public static final int G_OP = 25;
-	public static final int A_OP = 26;
+	public static final int F_OP = 26;
 	public static final int IMPLIES_OP = 27;
 	public static final int LEFT_SQ_BRACE = 28;
 	public static final int RIGHT_SQ_BRACE = 29;
@@ -40,8 +40,8 @@ public class Token {
 	public static final int OR_OP = 31;
 	public static final int NOT_OP = 32;
 	public static final int EDGE_OP = 33;
-	public static final int F_OP = 34;
 	public static final int STRING_LIT = 35;
+	public static final int N_INT_LIT = 36;
 
 	private static String[] lexemes = { ";", ",", "+", "-", "*", "/", "=", ">", "<", "<=", ">=", "==", "!=", "(", ")",
 			"{", "}", "id", "int_lit", "if", "int", "else", "while", "end", "return" };

@@ -56,14 +56,11 @@ public class Lexer {
 		if (Character.isLetter(ch) || ch == '_') {
 			ident();
 			switch (ident) {
-			case "A":
-				setNextToken(Token.A_OP);
+			case "F":
+				setNextToken(Token.F_OP);
 				break;
 			case "G":
 				setNextToken(Token.G_OP);
-				break;
-			case "F":
-				setNextToken(Token.F_OP);
 				break;
 			default:
 				setNextToken(Token.ID);
@@ -87,7 +84,10 @@ public class Lexer {
 				break;
 			case '-':
 				ch = read();
-				if (ch == '>') {
+				if (Character.isDigit(ch)) {
+					num();
+					setNextToken(Token.N_INT_LIT);
+				} else if (ch == '>') {
 					setNextToken(Token.IMPLIES_OP);
 					ch = read();
 				} else {
@@ -192,8 +192,8 @@ public class Lexer {
 	private void num() throws IOException {
 		ident = "";
 		do {
-			ident = ident + Character.digit(ch, 10);
+			ident = ident + ch;
 			ch = read();
-		} while (Character.isDigit(ch));
+		} while (Character.isDigit(ch) || ch == '.');
 	}
 }

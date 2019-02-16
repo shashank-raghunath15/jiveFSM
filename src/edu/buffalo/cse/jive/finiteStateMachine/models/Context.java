@@ -1,13 +1,18 @@
 package edu.buffalo.cse.jive.finiteStateMachine.models;
 
+import java.util.Map;
+import java.util.Set;
+
 public class Context {
 
 	private State currentState;
 	private State nextState;
+	private Map<State, Set<State>> states;
 
-	public Context(State currentState, State nextState) {
+	public Context(State currentState, State nextState, Map<State, Set<State>> states) {
 		this.currentState = currentState;
 		this.nextState = nextState;
+		this.states = states;
 	}
 
 	public State getCurrentState() {
@@ -24,6 +29,14 @@ public class Context {
 
 	public void setNextState(State nextState) {
 		this.nextState = nextState;
+	}
+
+	public Map<State, Set<State>> getStates() {
+		return states;
+	}
+
+	public void setStates(Map<State, Set<State>> states) {
+		this.states = states;
 	}
 
 	@Override

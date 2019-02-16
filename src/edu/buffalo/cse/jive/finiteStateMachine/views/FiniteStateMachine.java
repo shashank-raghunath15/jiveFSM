@@ -421,8 +421,10 @@ public class FiniteStateMachine extends ViewPart {
 				monitor.run();
 				monitor.validateAndBuildTransitions(expressions, this.transitionBuilder);
 			}
+		} catch (IllegalArgumentException exception) {
+			statusLineManager.setErrorMessage("Please add a property to validate");
 		} catch (IOException exception) {
-			statusLineManager.setErrorMessage("Error Parsing Properties");
+			statusLineManager.setErrorMessage("Invalid Properties");
 		}
 	}
 

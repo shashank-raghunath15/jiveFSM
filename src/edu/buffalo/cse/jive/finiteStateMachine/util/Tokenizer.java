@@ -27,8 +27,10 @@ public class Tokenizer {
 				output.add(lexer.getIdent());
 				idSet.add(lexer.getIdent());
 			} else if (nextToken == Token.INT_LIT)
-				output.add(String.valueOf(lexer.getIdent()));
-			else if (nextToken == Token.STRING_LIT)
+				output.add(lexer.getIdent());
+			else if (nextToken == Token.N_INT_LIT) {
+				output.add("-" + lexer.getIdent());
+			} else if (nextToken == Token.STRING_LIT)
 				output.add(lexer.getIdent());
 			else
 				output.add(Operators.getOperator(nextToken));
