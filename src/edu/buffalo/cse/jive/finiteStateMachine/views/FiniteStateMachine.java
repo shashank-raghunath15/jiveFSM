@@ -10,10 +10,11 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
@@ -55,12 +56,13 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.part.ViewPart;
 
-import edu.buffalo.cse.jive.finiteStateMachine.expression.Expression;
-import edu.buffalo.cse.jive.finiteStateMachine.models.Attribute;
+import edu.buffalo.cse.jive.finiteStateMachine.expression.expression.Expression;
+import edu.buffalo.cse.jive.finiteStateMachine.models.Event;
 import edu.buffalo.cse.jive.finiteStateMachine.models.InputFileParser;
-import edu.buffalo.cse.jive.finiteStateMachine.models.OfflineMonitor;
-import edu.buffalo.cse.jive.finiteStateMachine.models.OnlineMonitor;
 import edu.buffalo.cse.jive.finiteStateMachine.models.TransitionBuilder;
+import edu.buffalo.cse.jive.finiteStateMachine.monitor.Monitor;
+import edu.buffalo.cse.jive.finiteStateMachine.monitor.OfflineMonitor;
+import edu.buffalo.cse.jive.finiteStateMachine.monitor.OnlineMonitor;
 import edu.buffalo.cse.jive.finiteStateMachine.parser.Parser;
 import edu.buffalo.cse.jive.finiteStateMachine.parser.ParserImpl;
 import net.sourceforge.plantuml.FileFormat;
@@ -74,6 +76,7 @@ public class FiniteStateMachine extends ViewPart {
 	 * The ID of the view as specified by the extension.
 	 */
 	public static final String ID = "edu.buffalo.cse.jive.finiteStateMachine.views.FiniteStateMachine";
+
 	private IStatusLineManager statusLineManager;
 	private Display display;
 	private ScrolledComposite rootScrollComposite;
@@ -84,6 +87,7 @@ public class FiniteStateMachine extends ViewPart {
 	private Button browseButton;
 	private Button listenButton;
 	private Button stopButton;
+	private Button buildButton;
 	private Button exportButton;
 	Composite imageComposite;
 	Composite image2Composite;
@@ -98,7 +102,6 @@ public class FiniteStateMachine extends ViewPart {
 	private Button addButton;
 	private Button resetButton;
 	private Button drawButton;
-	private Button autoDraw;
 
 	private Label kvSyntax;
 	private Label kvSpace;
@@ -114,9 +117,12 @@ public class FiniteStateMachine extends ViewPart {
 	String svg;
 	private Label propertyLabel;
 	private Text propertyText;
-
+	private Button validateAndBuild;
 	public TransitionBuilder transitionBuilder;
-	private InputFileParser inputFileParser;
+	private BlockingQueue<Event> incomingStates;
+	private SvgGenerator svgGenerator;
+	private Monitor monitor;
+	private boolean online = false;
 
 	/**
 	 * The constructor.
@@ -204,6 +210,14 @@ public class FiniteStateMachine extends ViewPart {
 		resetButton.setText("Reset");
 		resetButton.setToolTipText("Clears the key attributes");
 
+		buildButton = new Button(evComposite, SWT.PUSH);
+		buildButton.setText("Build");
+		buildButton.setToolTipText("Builds the state diagram");
+
+		validateAndBuild = new Button(evComposite, SWT.PUSH);
+		validateAndBuild.setText("ValidateAndBuild");
+		validateAndBuild.setToolTipText("Validates and Builds states");
+
 		drawButton = new Button(evComposite, SWT.PUSH);
 		drawButton.setText("Draw");
 		drawButton.setToolTipText("Draws the state diagram");
@@ -216,10 +230,6 @@ public class FiniteStateMachine extends ViewPart {
 		Composite grComposite = new Composite(mainComposite, SWT.NONE);
 		grComposite.setLayout(new GridLayout(10, false));
 		grComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
-
-		autoDraw = new Button(grComposite, SWT.CHECK);
-		autoDraw.setSelection(false);
-		autoDraw.setText("Auto Draw");
 
 		// Predicate abstraction composite
 		Composite paComposite = new Composite(mainComposite, SWT.NONE);
@@ -293,7 +303,8 @@ public class FiniteStateMachine extends ViewPart {
 		statusLabel = new Label(ev2Composite, SWT.FILL);
 		statusLabel.setText("StatusUpdate:");
 
-		rootScrollComposite.setMinSize(mainComposite.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+		svgGenerator = new SvgGenerator(hcanvasText, vcanvasText, browser, imageComposite, rootScrollComposite,
+				mainComposite, display);
 		listenButton.addSelectionListener(new SelectionAdapter() {
 
 			@Override
@@ -301,7 +312,13 @@ public class FiniteStateMachine extends ViewPart {
 				listenButtonAction(e);
 			}
 		});
+		buildButton.addSelectionListener(new SelectionAdapter() {
 
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				buildButtonAction(e);
+			}
+		});
 		browseButton.addSelectionListener(new SelectionAdapter() {
 
 			@Override
@@ -351,66 +368,67 @@ public class FiniteStateMachine extends ViewPart {
 				Job.getJobManager().cancel("MonitorPortJob");
 			}
 		});
+
+		validateAndBuild.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				validateAndbuildButtonAction(e);
+			}
+		});
 	}
 
-	private List<Attribute> readAttributes(Text attributes) {
-		List<Attribute> keyAttributes;
+	private Set<String> readAttributes(Text attributes) {
+		Set<String> keyAttributes;
 		if (attributes != null && attributes.getText().length() > 0) {
-			keyAttributes = new ArrayList<Attribute>();
+			keyAttributes = new HashSet<String>();
 			String selected = attributes.getText();
 			for (String attribute : selected.split(",")) {
-				String[] values = attribute.trim().split("->");
-				keyAttributes.add(new Attribute(values[0], values[1]));
+				keyAttributes.add(attribute.trim());
 			}
 			return keyAttributes;
 		}
 		return null;
 	}
 
-	private List<Expression> parseExpressions(Text propertyText) {
+	private List<Expression> parseExpressions(Text propertyText) throws IOException {
 		if (propertyText != null && propertyText.getText().length() > 0) {
 			Parser parser = new ParserImpl();
 			String properties = propertyText.getText().trim();
 			return parser.parse(properties.split(propertyText.getLineDelimiter()));
 		}
-		return null;
+		throw new IllegalArgumentException();
 	}
 
-	public void generateSVG(String source, Text hcanvasText, Text vcanvasText, Browser browser,
-			Composite imageComposite, ScrolledComposite rootScrollComposite, Composite mainComposite) {
-		SourceStringReader reader = new SourceStringReader(source);
-		final ByteArrayOutputStream os = new ByteArrayOutputStream();
-		try {
-			@SuppressWarnings({ "unused" })
-			DiagramDescription description = reader.outputImage(os, new FileFormatOption(FileFormat.SVG));
-			os.close();
-		} catch (IOException ioe) {
-			System.out.println("Unable to generate SVG");
+	private void buildButtonAction(SelectionEvent e) {
+		this.transitionBuilder = new TransitionBuilder();
+		if (online) {
+			this.monitor.buildTransitions(this.transitionBuilder);
+		} else {
+			this.monitor = new OfflineMonitor(readAttributes(kvText), incomingStates);
+			this.monitor.run();
+			this.monitor.buildTransitions(this.transitionBuilder);
 		}
-		String svg = new String(os.toByteArray(), Charset.forName("UTF-8"));
-		GridData browserLData = new GridData();
-		display.asyncExec(new Runnable() {
+	}
 
-			@Override
-			public void run() {
-				browserLData.widthHint = Integer.parseInt(hcanvasText.getText()); // 1000;
-				browserLData.heightHint = Integer.parseInt(vcanvasText.getText()); // 600;
-				browser.setLayoutData(browserLData);
-				browser.setText(svg);
-				imageComposite.pack();
-				rootScrollComposite.setMinSize(mainComposite.computeSize(SWT.DEFAULT, SWT.DEFAULT));
-
+	private void validateAndbuildButtonAction(SelectionEvent e) {
+		this.transitionBuilder = new TransitionBuilder();
+		try {
+			List<Expression> expressions = parseExpressions(propertyText);
+			if (online) {
+				this.monitor.validateAndBuildTransitions(expressions, this.transitionBuilder);
+			} else {
+				monitor = new OfflineMonitor(readAttributes(kvText), incomingStates);
+				monitor.run();
+				monitor.validateAndBuildTransitions(expressions, this.transitionBuilder);
 			}
-		});
+		} catch (IOException exception) {
+			statusLineManager.setErrorMessage("Error Parsing Properties");
+		}
 	}
 
 	private void listenButtonAction(SelectionEvent e) {
-
-		ConcurrentLinkedQueue<String> incomingStates = new ConcurrentLinkedQueue<String>();
-		transitionBuilder = new TransitionBuilder();
-		OnlineMonitor runtimeMonitor = new OnlineMonitor(incomingStates, readAttributes(kvText),
-				parseExpressions(propertyText), transitionBuilder);
-		boolean aDraw = autoDraw.getSelection();
+		this.online = true;
+		this.incomingStates = new LinkedBlockingQueue<Event>();
 		Job job = new Job("MonitorPortJob") {
 			ServerSocket server;
 			Socket socket;
@@ -427,12 +445,9 @@ public class FiniteStateMachine extends ViewPart {
 					while (true) {
 						try {
 							if (in.available() > 0) {
-								incomingStates.offer(in.readUTF().replace("\"", "").trim());
-								if (aDraw)
-									generateSVG(transitionBuilder.getTransitions(), hcanvasText, vcanvasText, browser,
-											imageComposite, rootScrollComposite, mainComposite);
+								incomingStates.put(getEvent(in.readUTF().replace("\"", "").trim()));
 							}
-						} catch (IOException e) {
+						} catch (IOException | InterruptedException e) {
 							System.out.println("Job Stopped");
 							break;
 						}
@@ -458,8 +473,10 @@ public class FiniteStateMachine extends ViewPart {
 				super.canceling();
 				try {
 					System.out.println("Server Closed");
-					socket.close();
-					server.close();
+					if (socket != null)
+						socket.close();
+					if (server != null)
+						server.close();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -472,7 +489,9 @@ public class FiniteStateMachine extends ViewPart {
 		};
 		job.setUser(true);
 		job.schedule();
-		new Thread(runtimeMonitor).start();
+		this.monitor = new OnlineMonitor(readAttributes(kvText), incomingStates);
+		Thread thread = new Thread(this.monitor);
+		thread.start();
 	}
 
 	void updateUI(String message) {
@@ -483,6 +502,14 @@ public class FiniteStateMachine extends ViewPart {
 				statusLabel.setText(message);
 			}
 		});
+	}
+
+	private Event getEvent(String input) {
+		String[] tokens = input.split(",");
+		String object = tokens[0].substring(tokens[0].indexOf("=") + 1).replace("\"", "").trim();
+		String field = tokens[1].substring(0, tokens[1].indexOf("=")).replace("\"", "").trim();
+		String value = tokens[1].substring(tokens[1].indexOf("=") + 1).replace("\"", "").trim();
+		return new Event(object.replace("/", ".") + "." + field, value);
 	}
 
 	private void browseButtonAction(SelectionEvent e) {
@@ -506,10 +533,11 @@ public class FiniteStateMachine extends ViewPart {
 		attributeList.removeAll();
 		kvText.setText("");
 		paText.setText("");
-		inputFileParser = new InputFileParser(fileName);
-		Set<Attribute> allAttributes = inputFileParser.getAllAttributes();
-		for (Attribute attribute : allAttributes) {
-			attributeList.add(attribute.toString());
+		InputFileParser inputFileParser = new InputFileParser(fileName);
+		Set<String> allAttributes = inputFileParser.getAllFields();
+		this.incomingStates = inputFileParser.getEvents();
+		for (String attribute : allAttributes) {
+			attributeList.add(attribute);
 		}
 		drawButton.setEnabled(true);
 		statusLineManager.setMessage("Loaded " + fileName);
@@ -558,13 +586,9 @@ public class FiniteStateMachine extends ViewPart {
 		}
 		attributeList.setText("");
 	}
-	
+
 	private void drawButtonAction(SelectionEvent e) {
-		this.transitionBuilder = new TransitionBuilder();
-		new OfflineMonitor(inputFileParser.getEvents(), parseExpressions(propertyText), readAttributes(kvText),
-				transitionBuilder);
-		generateSVG(transitionBuilder.getTransitions(), hcanvasText, vcanvasText, browser, imageComposite,
-				rootScrollComposite, mainComposite);
+		svgGenerator.generate(this.transitionBuilder.getTransitions());
 		statusLineManager.setMessage("Finite State Model for " + kvText.getText());
 	}
 
@@ -575,7 +599,34 @@ public class FiniteStateMachine extends ViewPart {
 
 	@Override
 	public void setFocus() {
-		// TODO Auto-generated method stub
-		
+
+	}
+
+	public void generateSVG(String source, Text hcanvasText, Text vcanvasText, Browser browser,
+			Composite imageComposite, ScrolledComposite rootScrollComposite, Composite mainComposite) {
+		SourceStringReader reader = new SourceStringReader(source);
+		final ByteArrayOutputStream os = new ByteArrayOutputStream();
+		try {
+			@SuppressWarnings({ "unused" })
+			DiagramDescription description = reader.outputImage(os, new FileFormatOption(FileFormat.SVG));
+			os.close();
+		} catch (IOException ioe) {
+			System.out.println("Unable to generate SVG");
+		}
+		String svg = new String(os.toByteArray(), Charset.forName("UTF-8"));
+		GridData browserLData = new GridData();
+		display.asyncExec(new Runnable() {
+
+			@Override
+			public void run() {
+				browserLData.widthHint = Integer.parseInt(hcanvasText.getText()); // 1000;
+				browserLData.heightHint = Integer.parseInt(vcanvasText.getText()); // 600;
+				browser.setLayoutData(browserLData);
+				browser.setText(svg);
+				imageComposite.pack();
+				rootScrollComposite.setMinSize(mainComposite.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+
+			}
+		});
 	}
 }

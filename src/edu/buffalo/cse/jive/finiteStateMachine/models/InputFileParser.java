@@ -3,19 +3,19 @@ package edu.buffalo.cse.jive.finiteStateMachine.models;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class InputFileParser {
 
-	private Set<Attribute> allAttributes;
-	private List<FWEvent> events;
+	private Set<String> allFields;
+	private BlockingQueue<Event> events;
 
 	public InputFileParser(String fileName) {
-		this.allAttributes = new HashSet<Attribute>();
-		this.events = new ArrayList<FWEvent>();
+		this.allFields = new TreeSet<String>();
+		this.events = new LinkedBlockingQueue<Event>();
 		parseFile(fileName);
 	}
 
@@ -29,9 +29,9 @@ public class InputFileParser {
 					String object = tokens[4].substring(tokens[4].indexOf("=") + 1).replace("\"", "").trim();
 					String field = tokens[5].substring(0, tokens[5].indexOf("=")).replace("\"", "").trim();
 					String value = tokens[5].substring(tokens[5].indexOf("=") + 1).replace("\"", "").trim();
-					Attribute attribute = new Attribute(object, field);
-					events.add(new FWEvent(null, object, field, value, null));
-					allAttributes.add(attribute);
+					String fld = object.replace("/", ".") + "." + field;
+					events.add(new Event(fld, value));
+					allFields.add(fld);
 				}
 			}
 			bufferedReader.close();
@@ -40,11 +40,11 @@ public class InputFileParser {
 		}
 	}
 
-	public Set<Attribute> getAllAttributes() {
-		return allAttributes;
+	public Set<String> getAllFields() {
+		return allFields;
 	}
 
-	public List<FWEvent> getEvents() {
+	public BlockingQueue<Event> getEvents() {
 		return events;
 	}
 

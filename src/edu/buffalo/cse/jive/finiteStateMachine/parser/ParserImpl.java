@@ -1,20 +1,19 @@
 package edu.buffalo.cse.jive.finiteStateMachine.parser;
 
-import java.io.DataInputStream;
-import java.io.StringBufferInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
-import edu.buffalo.cse.jive.finiteStateMachine.expression.Expression;
-import edu.buffalo.cse.jive.finiteStateMachine.expression.ExpressionFactory;
-import edu.buffalo.cse.jive.finiteStateMachine.expression.IBinaryExpression;
-import edu.buffalo.cse.jive.finiteStateMachine.models.Buffer;
+import edu.buffalo.cse.jive.finiteStateMachine.expression.core.ExpressionFactory;
+import edu.buffalo.cse.jive.finiteStateMachine.expression.expression.Expression;
+import edu.buffalo.cse.jive.finiteStateMachine.expression.expression.IBinaryExpression;
+import edu.buffalo.cse.jive.finiteStateMachine.expression.expression.IUnaryExpression;
 import edu.buffalo.cse.jive.finiteStateMachine.models.Node;
-import edu.buffalo.cse.jive.finiteStateMachine.models.Operators;
-import edu.buffalo.cse.jive.finiteStateMachine.models.Tokenizer;
+import edu.buffalo.cse.jive.finiteStateMachine.util.Operators;
+import edu.buffalo.cse.jive.finiteStateMachine.util.Tokenizer;
 
 /**
  * @author Shashank Raghunath
@@ -23,27 +22,22 @@ import edu.buffalo.cse.jive.finiteStateMachine.models.Tokenizer;
  * @author Sandeep Kumar
  * @email skumar28@buffalo.edu
  */
-@SuppressWarnings("deprecation")
 public class ParserImpl implements Parser {
 
 	private Expression expression;
 
 	@Override
-	public List<Expression> parse(String[] inputs) {
+	public List<Expression> parse(String[] inputs) throws IOException {
 		List<Expression> expressions = new ArrayList<>();
 		for (String input : inputs) {
-			StringBuffer buffer = new StringBuffer(input);
-			buffer.append(";");
-			Tokenizer tokenizer = new Tokenizer(
-					new Buffer(new DataInputStream(new StringBufferInputStream(buffer.toString()))));
-			Node<String> tree = buildPrecedenceTree(convertToPostfix(tokenizer.tokenize()));
+			Node<String> tree = buildPrecedenceTree(convertToPostfix(Tokenizer.tokenize(input)));
 			expressions.add(parsePreOrder(tree, expression));
 			expression = null;
 		}
 		return expressions;
 	}
 
-	private Node<String> buildPrecedenceTree(List<String> inputs) {
+	public Node<String> buildPrecedenceTree(List<String> inputs) {
 		Stack<Node<String>> stack = new Stack<>();
 		int i = 0;
 		while (i < inputs.size()) {
@@ -170,18 +164,21 @@ public class ParserImpl implements Parser {
 		return result;
 	}
 
-	private Expression parsePreOrder(Node<String> root, Expression expression) {
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public Expression parsePreOrder(Node<String> root, Expression expression) {
 		if (root == null) {
 			return null;
 		}
 		String data = root.getData();
 		expression = ExpressionFactory.getExpression(data);
 		if (expression instanceof IBinaryExpression) {
-			expression.setExpressionA(parsePreOrder(root.getLeft(), ((IBinaryExpression) expression).getExpressionA()));
+			((IBinaryExpression) expression)
+					.setExpressionA(parsePreOrder(root.getLeft(), ((IBinaryExpression) expression).getExpressionA()));
 			((IBinaryExpression) expression)
 					.setExpressionB(parsePreOrder(root.getRight(), ((IBinaryExpression) expression).getExpressionB()));
-		} else {
-			expression.setExpressionA(parsePreOrder(root.getLeft(), expression.getExpressionA()));
+		} else if (expression instanceof IUnaryExpression) {
+			((IUnaryExpression) expression)
+					.setExpression(parsePreOrder(root.getLeft(), ((IUnaryExpression) expression).getExpression()));
 		}
 		return expression;
 	}

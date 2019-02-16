@@ -1,97 +1,24 @@
 package edu.buffalo.cse.jive.finiteStateMachine.models;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import edu.buffalo.cse.jive.finiteStateMachine.expression.value.ValueExpression;
 
 public class State implements Serializable {
 
 	private static final long serialVersionUID = -4135264377873998847L;
-	public ArrayList<String> keyVar = new ArrayList<String>();
-	public String method;
-	public boolean hashed;
-	public int time = 0;
+	Map<String, ValueExpression> map = new HashMap<>();
 
-	public ArrayList<String> getKeyVar() {
-		return keyVar;
-	}
-
-	public void setKeyVar(ArrayList<String> keyVar) {
-		this.keyVar = keyVar;
-	}
-
-	public boolean isHashed() {
-		return hashed;
-	}
-
-	public void setHashed(boolean hashed) {
-		this.hashed = hashed;
-	}
-
-	public int getTime() {
-		return time;
-	}
-
-	public void setTime(int time) {
-		this.time = time;
-	}
-
-	public int getSize() {
-		return keyVar.size();
-	}
-
-	public void set(int index, String value) {
-		keyVar.add(index, value);
-	}
-
-	public void set2(int index, String value) {
-		keyVar.set(index, value);
-	}
-
-	public String get(int index) {
-		return keyVar.get(index);
-	}
-
-	public void setMethod(String m) {
-		method = m;
-	}
-
-	public String getMethod() {
-		return method;
-	}
-
-	public void remove(int index) {
-		keyVar.remove(index);
-	}
-
-	public void copy(State s) {
-		for (int j = 0; j < s.getSize(); j++) {
-			keyVar.add(j, s.get(j));
-		}
-		if (s.method != null)
-			method = new String(s.method);
-		time = s.time;
-	}
-
+	@Override
 	public String toString() {
-		StringBuffer sbKeys = new StringBuffer();
-		sbKeys.append(keyVar.get(0));
-		for (int j = 1; j < keyVar.size(); j++) {
-			sbKeys.append(",");
-			sbKeys.append(keyVar.get(j));
+		StringBuilder stringBuilder = new StringBuilder();
+		for (String key : map.keySet()) {
+			stringBuilder.append(map.get(key));
+			stringBuilder.append(",");
 		}
-		return sbKeys.toString();
-	}
-
-	public void print(int flag) {
-		if (flag == 0)
-			System.out.println(toString());
-		else if (flag == 1)
-			System.out.println(toString() + " (" + method + ") " + hashed + " time=" + time);
+		return stringBuilder.substring(0, stringBuilder.length() - 1).toString();
 	}
 
 	@Override
@@ -102,37 +29,21 @@ public class State implements Serializable {
 		return toString().equals(newState.toString());
 	}
 
-	public State copy() {
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		try {
-			ObjectOutputStream stream = new ObjectOutputStream(outputStream);
-			stream.writeObject(this);
-			stream.flush();
-			stream.close();
-			outputStream.close();
-			byte[] byteArray = outputStream.toByteArray();
-			ByteArrayInputStream inputStream = new ByteArrayInputStream(byteArray);
-			ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
-			State state = (State) objectInputStream.readObject();
-			inputStream.close();
-			objectInputStream.close();
-			return state;
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return this;
-	}
-
 	@Override
 	public int hashCode() {
 		int hash = 0;
-		for (String key : keyVar) {
-			hash *= key.hashCode();
+		for (String s : map.keySet()) {
+			hash ^= s.hashCode() ^ map.get(s).hashCode();
 		}
 		return hash;
 	}
+
+	public Map<String, ValueExpression> getMap() {
+		return map;
+	}
+
+	public void setMap(Map<String, ValueExpression> map) {
+		this.map = map;
+	}
+
 }

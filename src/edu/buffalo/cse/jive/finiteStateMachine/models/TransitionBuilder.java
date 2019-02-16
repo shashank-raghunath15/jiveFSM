@@ -1,17 +1,14 @@
 package edu.buffalo.cse.jive.finiteStateMachine.models;
 
-import java.util.HashSet;
-import java.util.Set;
-
 public class TransitionBuilder {
 
 	private StringBuilder transitions;
-	private Set<String> transitionSet;
+	private volatile boolean updated = false;
 
 	public TransitionBuilder() {
 		transitions = new StringBuilder();
-		transitionSet = new HashSet<String>();
 		transitions.append("@startuml\n");
+		updated = false;
 	}
 
 	public void addInitialState(State state) {
@@ -25,7 +22,15 @@ public class TransitionBuilder {
 
 	public void addTransition(State state1, State state2) {
 		String s = "\"" + state1.toString() + "\"" + " --> " + "\"" + state2.toString() + "\"";
-		if (transitionSet.add(s)) {
+		this.transitions.append(s);
+		addNewLine();
+	}
+
+	public void addTransition(State state1, State state2, boolean result) {
+		if (!result) {
+			addColorTransition(state1, state2, "red");
+		} else {
+			String s = "\"" + state1.toString() + "\"" + " --> " + "\"" + state2.toString() + "\"";
 			this.transitions.append(s);
 			addNewLine();
 		}
@@ -33,13 +38,27 @@ public class TransitionBuilder {
 
 	public void addColorTransition(State state1, State state2, String color) {
 		String s = "\"" + state1.toString() + "\"" + " --> " + "\"" + state2.toString() + "\"" + " #" + color;
-		if (transitionSet.add(s)) {
-			this.transitions.append(s);
-			addNewLine();
-		}
+		this.transitions.append(s);
+		addNewLine();
+	}
+
+	public void setUpdated(boolean updated) {
+		this.updated = updated;
 	}
 
 	private void addNewLine() {
 		this.transitions.append("\n");
+	}
+
+	public synchronized boolean isUpdated() {
+		while (!updated) {
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		notify();
+		return true;
 	}
 }

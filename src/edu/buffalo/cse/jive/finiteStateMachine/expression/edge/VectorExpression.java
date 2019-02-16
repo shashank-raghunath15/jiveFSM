@@ -3,43 +3,39 @@ package edu.buffalo.cse.jive.finiteStateMachine.expression.edge;
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.buffalo.cse.jive.finiteStateMachine.expression.Expression;
-import edu.buffalo.cse.jive.finiteStateMachine.expression.literal.ValueExpression;
-import edu.buffalo.cse.jive.finiteStateMachine.models.UnaryContext;
+import edu.buffalo.cse.jive.finiteStateMachine.expression.expression.Expression;
+import edu.buffalo.cse.jive.finiteStateMachine.models.Context;
 
-public class VectorExpression extends ValueExpression {
-	
-	private List<String> vectorValue;
-	
+public class VectorExpression extends Expression {
+
+	private List<Object> vectorValue;
+
 	public VectorExpression(String vectorString) {
 		int len = vectorString.length();
-		vectorString = vectorString.substring(1,len-1);
-		String [] token = vectorString.split(",");
-		List<String> vector = new ArrayList<>();
-		for(String str : token) {
-			vector.add(str);
+		vectorString = vectorString.substring(1, len - 1);
+		String[] token = vectorString.split(",");
+		List<Object> vector = new ArrayList<>();
+		for (String str : token) {
+			try {
+				Double d = Double.parseDouble(str);
+				vector.add(d);
+			} catch (Exception e) {
+				vector.add(str);
+			}
 		}
 		setVectorValue(vector);
 	}
 
-	@Override
-	public void setExpressionA(Expression expression) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public List<String> getVectorValue() {
+	public List<Object> getVectorValue() {
 		return vectorValue;
 	}
 
-	public void setVectorValue(List<String> vectorValue) {
+	public void setVectorValue(List<Object> vectorValue) {
 		this.vectorValue = vectorValue;
 	}
 
 	@Override
-	public boolean evaluate(UnaryContext ct) {
-
-		return false;
+	public Boolean evaluate(Context context) {
+		return context.getCurrentState().getMap().size() == vectorValue.size();
 	}
-
 }

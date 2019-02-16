@@ -1,7 +1,7 @@
 package edu.buffalo.cse.jive.finiteStateMachine.expression.relational;
 
-import edu.buffalo.cse.jive.finiteStateMachine.expression.Quantifiable;
-import edu.buffalo.cse.jive.finiteStateMachine.models.UnaryContext;
+import edu.buffalo.cse.jive.finiteStateMachine.expression.expression.Expression;
+import edu.buffalo.cse.jive.finiteStateMachine.models.Context;
 
 /**
  * @author Shashank Raghunath
@@ -10,14 +10,25 @@ import edu.buffalo.cse.jive.finiteStateMachine.models.UnaryContext;
  */
 public class GreaterThanExpression extends RelationalExpression {
 
+	public GreaterThanExpression() {
+		super();
+	}
+
+	public GreaterThanExpression(Expression expressionA, Expression expressionB) {
+		super(expressionA, expressionB);
+	}
+
 	@Override
-	public boolean evaluate(UnaryContext ct) {
-		if (getExpressionA() instanceof Quantifiable && getExpressionB() instanceof Quantifiable) {
-			String valueA = getExpressionA().getValue(ct);
-			String valueB = getExpressionB().getValue(ct);
-			if (valueA.compareTo(valueB) > 0)
-				return true;
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public Boolean evaluate(Context context) {
+		try {
+			Comparable comparableA = (Comparable) getExpressionA();
+			Comparable comparableB = (Comparable) getExpressionB();
+			getExpressionA().evaluate(context);
+			getExpressionB().evaluate(context);
+			return comparableA.compareTo(comparableB) > 0;
+		} catch (ClassCastException e) {
+			return true;
 		}
-		return false;
 	}
 }

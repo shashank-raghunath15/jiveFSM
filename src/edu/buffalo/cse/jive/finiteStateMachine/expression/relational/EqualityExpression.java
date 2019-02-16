@@ -1,8 +1,7 @@
 package edu.buffalo.cse.jive.finiteStateMachine.expression.relational;
 
-import edu.buffalo.cse.jive.finiteStateMachine.expression.Expression;
-import edu.buffalo.cse.jive.finiteStateMachine.expression.Quantifiable;
-import edu.buffalo.cse.jive.finiteStateMachine.models.UnaryContext;
+import edu.buffalo.cse.jive.finiteStateMachine.expression.expression.Expression;
+import edu.buffalo.cse.jive.finiteStateMachine.models.Context;
 
 /**
  * @author Shashank Raghunath
@@ -10,26 +9,26 @@ import edu.buffalo.cse.jive.finiteStateMachine.models.UnaryContext;
  *
  */
 public class EqualityExpression extends RelationalExpression {
-	
-	
+
 	public EqualityExpression() {
 		super();
-		// TODO Auto-generated constructor stub
 	}
 
-	public EqualityExpression(Expression a, Expression b) {
-		super(a,b);
+	public EqualityExpression(Expression expressionA, Expression expressionB) {
+		super(expressionA, expressionB);
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
-	public boolean evaluate(UnaryContext ct) {
-		if(getExpressionA() instanceof Quantifiable && getExpressionB() instanceof Quantifiable){
-			String valueA = getExpressionA().getValue(ct);
-			String valueB = getExpressionB().getValue(ct);
-			if(valueA.equals(valueB))
-				return true;
+	public Boolean evaluate(Context context) {
+		try {
+			Comparable comparableA = (Comparable) getExpressionA();
+			Comparable comparableB = (Comparable) getExpressionB();
+			getExpressionA().evaluate(context);
+			getExpressionB().evaluate(context);
+			return comparableA.compareTo(comparableB) == 0;
+		} catch (ClassCastException e) {
+			return getExpressionA().evaluate(context).equals(getExpressionB().evaluate(context));
 		}
-		return getExpressionA().evaluate(ct) == getExpressionB().evaluate(ct);
 	}
-	
 }

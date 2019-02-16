@@ -1,40 +1,28 @@
 package edu.buffalo.cse.jive.finiteStateMachine.expression.edge;
 
-import edu.buffalo.cse.jive.finiteStateMachine.expression.Expression;
-import edu.buffalo.cse.jive.finiteStateMachine.expression.IBinaryExpression;
+import edu.buffalo.cse.jive.finiteStateMachine.expression.expression.BinaryExpression;
+import edu.buffalo.cse.jive.finiteStateMachine.models.Context;
 import edu.buffalo.cse.jive.finiteStateMachine.models.State;
-import edu.buffalo.cse.jive.finiteStateMachine.models.UnaryContext;
 
-public class EdgeExpression extends Expression implements IBinaryExpression {
-	private VectorExpression expressionA;
-	private VectorExpression expressionB;
+public class EdgeExpression extends BinaryExpression<VectorExpression, VectorExpression> {
 
-	public Expression getExpressionA() {
-		// TODO Auto-generated method stub
-		return expressionA;
+	public EdgeExpression() {
+		super();
+		// TODO Auto-generated constructor stub
 	}
 
-	public void setExpressionA(Expression expression) {
-		this.expressionA = (VectorExpression) expression;
-
-	}
-
-	public Expression getExpressionB() {
-		// TODO Auto-generated method stub
-		return expressionB;
-	}
-
-	public void setExpressionB(Expression expression) {
-		this.expressionB = (VectorExpression) expression;
+	public EdgeExpression(VectorExpression expressionA, VectorExpression expressionB) {
+		super(expressionA, expressionB);
 	}
 
 	@Override
-	public boolean evaluate(UnaryContext ct) {
-		State nextState = ct.state;
-		State previousState = ct.state2;
-		if(nextState == null || previousState == null) return false;
-		return nextState.keyVar.equals(expressionA.getVectorValue())
-				&& previousState.getKeyVar().equals(expressionB.getVectorValue());
+	public Boolean evaluate(Context context) {
+		State nextState = context.getNextState();
+		State currentState = context.getCurrentState();
+		if (nextState == null || currentState == null)
+			return false;
+		return currentState.getMap().values().equals(getExpressionA().getVectorValue())
+				&& nextState.getMap().values().equals(getExpressionB().getVectorValue());
 	}
 
 }
