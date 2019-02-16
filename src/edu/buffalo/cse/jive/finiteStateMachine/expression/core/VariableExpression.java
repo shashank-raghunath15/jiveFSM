@@ -1,7 +1,7 @@
 package edu.buffalo.cse.jive.finiteStateMachine.expression.core;
 
-import edu.buffalo.cse.jive.finiteStateMachine.expression.expression.Expression;
-import edu.buffalo.cse.jive.finiteStateMachine.expression.expression.UnaryExpression;
+import edu.buffalo.cse.jive.finiteStateMachine.expression.expression.IUnaryExpression;
+import edu.buffalo.cse.jive.finiteStateMachine.expression.value.ValueExpression;
 import edu.buffalo.cse.jive.finiteStateMachine.models.Context;
 
 /**
@@ -9,18 +9,17 @@ import edu.buffalo.cse.jive.finiteStateMachine.models.Context;
  * @email sraghuna@buffalo.edu
  *
  */
-public class VariableExpression extends UnaryExpression<Expression> implements Comparable<Expression> {
+public class VariableExpression extends ValueExpression
+		implements Comparable<ValueExpression>, IUnaryExpression<ValueExpression> {
 
+	private static final long serialVersionUID = -4397243041174216675L;
 	private String name;
+	private ValueExpression expression;
 
-	public VariableExpression(String name, Expression expression) {
+	public VariableExpression(String name, ValueExpression expression) {
 		super(expression);
 		this.name = name;
-	}
-
-	public VariableExpression(String name) {
-		super();
-		this.name = name;
+		this.expression = expression;
 	}
 
 	public String getName() {
@@ -42,15 +41,18 @@ public class VariableExpression extends UnaryExpression<Expression> implements C
 		return true;
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
-	public int compareTo(Expression o) {
-		try {
-			Comparable comparableA = (Comparable) getExpression();
-			Comparable comparableB = (Comparable) o;
-			return comparableA.compareTo(comparableB);
-		} catch (ClassCastException e) {
-			return 0;
-		}
+	public ValueExpression getExpression() {
+		return expression;
+	}
+
+	@Override
+	public void setExpression(ValueExpression expression) {
+		this.expression = expression;
+	}
+
+	@Override
+	public Object getValue() {
+		return getExpression().getValue();
 	}
 }

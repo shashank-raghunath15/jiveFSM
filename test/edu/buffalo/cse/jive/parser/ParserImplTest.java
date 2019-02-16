@@ -48,7 +48,7 @@ class ParserImplTest {
 
 	@Test
 	final void testParse3() {
-		String input = new String("G[ Database:1.w == 0 -> Database:1.r == -1.5 ]");
+		String input = new String("G[Database:1.w == 1 && Database:1.r == 0 ] -> F [ Database:1.r < Database:1.r' - 2 ]");
 		try {
 			List<String> postFix = parser.convertToPostfix(Tokenizer.tokenize(input));
 			Expression expression = parser.parsePreOrder(parser.buildPrecedenceTree(postFix), null);

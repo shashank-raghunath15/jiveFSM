@@ -1,6 +1,5 @@
 package edu.buffalo.cse.jive.finiteStateMachine.expression.arithmetic;
 
-import edu.buffalo.cse.jive.finiteStateMachine.expression.value.ValueExpression;
 import edu.buffalo.cse.jive.finiteStateMachine.models.Context;
 
 /**
@@ -10,18 +9,22 @@ import edu.buffalo.cse.jive.finiteStateMachine.models.Context;
  */
 public class MultiplicationExpression extends ArithmeticExpression {
 
+	private static final long serialVersionUID = -8442383379406229604L;
+
 	public MultiplicationExpression() {
 		super();
 	}
 
-	public MultiplicationExpression(ValueExpression expressionA, ValueExpression expressionB) {
-		super(expressionA, expressionB);
+	@Override
+	public Boolean evaluate(Context context) {
+		getExpressionA().evaluate(context);
+		getExpressionB().evaluate(context);
+		return true;
 	}
 
 	@Override
-	public Boolean evaluate(Context context) {
-		// TODO Auto-generated method stub
-		return null;
+	public Object getValue() {
+		return getExpressionA().multiply(getExpressionB());
 	}
 
 }

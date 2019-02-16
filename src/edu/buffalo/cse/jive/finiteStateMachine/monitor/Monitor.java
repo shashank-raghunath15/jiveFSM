@@ -64,6 +64,7 @@ public abstract class Monitor implements Runnable {
 	}
 
 	public void buildTransitions(TransitionBuilder transitionBuilder) {
+		printStates();
 		transitionBuilder.addInitialState(rootState);
 		buildTransitions(rootState, new HashSet<Pair<State, State>>(), transitionBuilder);
 	}

@@ -70,7 +70,7 @@ public class ExpressionFactory {
 					return new DoubleValueExpression(Double.parseDouble(input));
 				} catch (Exception exception) {
 					if (Tokenizer.idSet.contains(input)) {
-						return new VariableExpression(input);
+						return new VariableExpression(input, null);
 					} else if (input.startsWith("<")) {
 						return new VectorExpression(input);
 					} else {

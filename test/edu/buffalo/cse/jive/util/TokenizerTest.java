@@ -11,7 +11,7 @@ class TokenizerTest {
 
 	@Test
 	final void testTokenize() {
-		String input = new String("G [current_floor == 'up' -> direction > direction' ]");
+		String input = new String("G[ Database:1.w == Database:1.r + 3 ]");
 		try {
 			List<String> tokens = Tokenizer.tokenize(input);
 			for (String s : tokens)
