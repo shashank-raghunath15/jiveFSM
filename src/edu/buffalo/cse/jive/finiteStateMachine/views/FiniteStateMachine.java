@@ -1,23 +1,19 @@
 package edu.buffalo.cse.jive.finiteStateMachine.views;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -65,10 +61,7 @@ import edu.buffalo.cse.jive.finiteStateMachine.monitor.OfflineMonitor;
 import edu.buffalo.cse.jive.finiteStateMachine.monitor.OnlineMonitor;
 import edu.buffalo.cse.jive.finiteStateMachine.parser.Parser;
 import edu.buffalo.cse.jive.finiteStateMachine.parser.ParserImpl;
-import net.sourceforge.plantuml.FileFormat;
-import net.sourceforge.plantuml.FileFormatOption;
 import net.sourceforge.plantuml.SourceStringReader;
-import net.sourceforge.plantuml.core.DiagramDescription;
 
 public class FiniteStateMachine extends ViewPart {
 
@@ -548,27 +541,17 @@ public class FiniteStateMachine extends ViewPart {
 	}
 
 	private void exportButtonAction(SelectionEvent e) {
-
-		IPath path = ResourcesPlugin.getPlugin().getStateLocation();
-		String from = path.toFile().getPath() + File.separator + "state.svg";
-
+		SourceStringReader reader = new SourceStringReader(transitionBuilder.getTransitions());
 		FileDialog fd = new FileDialog(new Shell(Display.getCurrent()), SWT.SAVE);
 		fd.setText("Export As");
-		// String[] filterExtensions = {"*.png", "*.bmp", "*.jpg"};
 		String[] filterExtensions = { "*.svg" };
 		fd.setFilterExtensions(filterExtensions);
-
-		String to = fd.open();
-		if (to == null)
-			return;
-		System.out.println("From " + from + " to" + to);
-
-		File fromFile = new File(from);
-		File toFile = new File(to);
 		try {
-			Files.copy(fromFile.toPath(), toFile.toPath());
-		} catch (IOException ioe) {
-			System.out.println(ioe);
+			reader.outputImage(new File(fd.open()));
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			e1.printStackTrace();
 		}
 	}
 
@@ -604,33 +587,5 @@ public class FiniteStateMachine extends ViewPart {
 	@Override
 	public void setFocus() {
 
-	}
-
-	public void generateSVG(String source, Text hcanvasText, Text vcanvasText, Browser browser,
-			Composite imageComposite, ScrolledComposite rootScrollComposite, Composite mainComposite) {
-		SourceStringReader reader = new SourceStringReader(source);
-		final ByteArrayOutputStream os = new ByteArrayOutputStream();
-		try {
-			@SuppressWarnings({ "unused" })
-			DiagramDescription description = reader.outputImage(os, new FileFormatOption(FileFormat.SVG));
-			os.close();
-		} catch (IOException ioe) {
-			System.out.println("Unable to generate SVG");
-		}
-		String svg = new String(os.toByteArray(), Charset.forName("UTF-8"));
-		GridData browserLData = new GridData();
-		display.asyncExec(new Runnable() {
-
-			@Override
-			public void run() {
-				browserLData.widthHint = Integer.parseInt(hcanvasText.getText()); // 1000;
-				browserLData.heightHint = Integer.parseInt(vcanvasText.getText()); // 600;
-				browser.setLayoutData(browserLData);
-				browser.setText(svg);
-				imageComposite.pack();
-				rootScrollComposite.setMinSize(mainComposite.computeSize(SWT.DEFAULT, SWT.DEFAULT));
-
-			}
-		});
 	}
 }

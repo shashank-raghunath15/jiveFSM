@@ -26,3 +26,4 @@ Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: lib/plantuml.jar,
  .
 Import-Package: net.sourceforge.plantuml
+Automatic-Module-Name: Finite_State_Machine
