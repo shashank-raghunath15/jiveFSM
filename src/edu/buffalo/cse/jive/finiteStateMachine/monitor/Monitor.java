@@ -30,13 +30,16 @@ public abstract class Monitor implements Runnable {
 		this.states = new HashMap<State, Set<State>>();
 		previousState = new State();
 		for (String field : getKeyFields()) {
-			previousState.getMap().put(field, null);
+			if (Event.map.containsKey(field))
+				previousState.getMap().put(Event.map.get(field), null);
+			else
+				previousState.getMap().put(field, null);
 		}
 	}
 
 	protected boolean buildStates(Event event) {
 		boolean result = false;
-		if (keyFields.contains(event.getField())) {
+		if (keyFields.contains(event.getField()) || keyFields.contains(getEventKey(event.getField()))) {
 			State newState = DeepCopy.deepCopy(previousState);
 			newState.getMap().put(event.getField(), event.getValue());
 			if (!newState.getMap().values().contains(null) && !previousState.getMap().values().contains(null)) {
@@ -52,6 +55,16 @@ public abstract class Monitor implements Runnable {
 		return result;
 	}
 
+	private String getEventKey(String value) {
+		if (Event.map == null)
+			return null;
+		for (Map.Entry<String, String> entry : Event.map.entrySet()) {
+			if (entry.getValue().equals(value))
+				return entry.getKey();
+		}
+		return null;
+	}
+
 	private boolean validate(State current, State next, List<Expression> expressions) {
 		boolean valid = true;
 		for (Expression expression : expressions) {
@@ -64,7 +77,7 @@ public abstract class Monitor implements Runnable {
 	}
 
 	public void buildTransitions(TransitionBuilder transitionBuilder) {
-		transitionBuilder.addInitialState(rootState);
+		transitionBuilder.addInitialState(rootState, true);
 		buildTransitions(rootState, new HashSet<Pair<State, State>>(), transitionBuilder);
 	}
 
@@ -78,7 +91,7 @@ public abstract class Monitor implements Runnable {
 	}
 
 	public void validateAndBuildTransitions(List<Expression> expressions, TransitionBuilder transitionBuilder) {
-		transitionBuilder.addInitialState(rootState);
+		transitionBuilder.addInitialState(rootState, validate(rootState, null, expressions));
 		validateAndBuildTransitions(null, rootState, new HashSet<Pair<State, State>>(), expressions, transitionBuilder);
 	}
 

@@ -1,5 +1,8 @@
 package edu.buffalo.cse.jive.finiteStateMachine.models;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import edu.buffalo.cse.jive.finiteStateMachine.expression.value.DoubleValueExpression;
 import edu.buffalo.cse.jive.finiteStateMachine.expression.value.IntegerValueExpression;
 import edu.buffalo.cse.jive.finiteStateMachine.expression.value.StringValueExpression;
@@ -9,6 +12,7 @@ public class Event {
 
 	private String field;
 	private ValueExpression value;
+	public static Map<String, String> map = new HashMap<>();
 
 	public Event(String field, String value) {
 		this.field = field;
@@ -24,6 +28,9 @@ public class Event {
 	}
 
 	public String getField() {
+		if (map.containsKey(this.field)) {
+			return map.get(this.field);
+		}
 		return this.field;
 	}
 

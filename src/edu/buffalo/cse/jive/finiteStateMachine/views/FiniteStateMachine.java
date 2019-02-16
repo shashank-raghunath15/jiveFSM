@@ -98,8 +98,6 @@ public class FiniteStateMachine extends ViewPart {
 
 	private Label kvSyntax;
 	private Label kvSpace;
-	private Label paSpace; // For predicate abstraction
-	private Label paSyntax; // For predicate abstraction
 
 	Browser browser; // For svg support
 	private Label canvasLabel;
@@ -230,20 +228,13 @@ public class FiniteStateMachine extends ViewPart {
 		paComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
 
 		paLabel = new Label(paComposite, SWT.FILL);
-		paLabel.setText("Abstraction");
+		paLabel.setText("Abbreviations");
 
 		paText = new Text(paComposite, SWT.BORDER | SWT.FILL);
 		GridData gd5b = new GridData();
 		gd5b.widthHint = 400;
 		paText.setLayoutData(gd5b);
 
-		paSpace = new Label(paComposite, SWT.FILL);
-		paSpace.setText("                     ");
-
-		paSyntax = new Label(paComposite, SWT.FILL);
-		paSyntax.setText("Comma-separated entries each of which may be =n, <n, >n, #n, \n"
-				+ "[a:b:..:c] or left empty, e.g., =5,,>3,[2:5:8],#true,<4.17,=str");
-		// Predicate abstraction changes end
 		Composite grammarView = new Composite(mainComposite, SWT.NONE);
 		grammarView.setLayout(new GridLayout(3, false));
 		grammarView.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
@@ -370,13 +361,22 @@ public class FiniteStateMachine extends ViewPart {
 		});
 	}
 
-	private Set<String> readAttributes(Text attributes) {
+	private Set<String> readAttributes(Text attributes, Text abbreviations) {
 		Set<String> keyAttributes;
 		if (attributes != null && attributes.getText().length() > 0) {
 			keyAttributes = new HashSet<String>();
 			String selected = attributes.getText();
 			for (String attribute : selected.split(",")) {
 				keyAttributes.add(attribute.trim());
+			}
+
+			if (abbreviations != null && abbreviations.getText().length() > 0) {
+				for (String abbreviation : abbreviations.getText().split(",")) {
+					String attribute = abbreviation.split("=")[0].trim();
+					if (keyAttributes.contains(attribute)) {
+						Event.map.put(attribute, abbreviation.split("=")[1].trim());
+					}
+				}
 			}
 			return keyAttributes;
 		}
@@ -397,7 +397,7 @@ public class FiniteStateMachine extends ViewPart {
 		if (online) {
 			this.monitor.buildTransitions(this.transitionBuilder);
 		} else {
-			this.monitor = new OfflineMonitor(readAttributes(kvText), incomingStates);
+			this.monitor = new OfflineMonitor(readAttributes(kvText, paText), incomingStates);
 			this.monitor.run();
 			this.monitor.buildTransitions(this.transitionBuilder);
 		}
@@ -410,7 +410,7 @@ public class FiniteStateMachine extends ViewPart {
 			if (online) {
 				this.monitor.validateAndBuildTransitions(expressions, this.transitionBuilder);
 			} else {
-				monitor = new OfflineMonitor(readAttributes(kvText), incomingStates);
+				monitor = new OfflineMonitor(readAttributes(kvText, paText), incomingStates);
 				monitor.run();
 				monitor.validateAndBuildTransitions(expressions, this.transitionBuilder);
 			}
@@ -420,6 +420,9 @@ public class FiniteStateMachine extends ViewPart {
 		} catch (IOException exception) {
 			exception.printStackTrace();
 			statusLineManager.setErrorMessage("Invalid Properties");
+		} catch (Exception exception) {
+			exception.printStackTrace();
+			statusLineManager.setErrorMessage("Unexpected error parsing properties");
 		}
 	}
 
@@ -486,7 +489,7 @@ public class FiniteStateMachine extends ViewPart {
 		};
 		job.setUser(true);
 		job.schedule();
-		this.monitor = new OnlineMonitor(readAttributes(kvText), incomingStates);
+		this.monitor = new OnlineMonitor(readAttributes(kvText, paText), incomingStates);
 		Thread thread = new Thread(this.monitor);
 		thread.start();
 	}

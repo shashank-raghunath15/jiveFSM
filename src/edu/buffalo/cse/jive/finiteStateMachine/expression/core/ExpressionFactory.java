@@ -18,6 +18,7 @@ import edu.buffalo.cse.jive.finiteStateMachine.expression.relational.NotEquality
 import edu.buffalo.cse.jive.finiteStateMachine.expression.value.DoubleValueExpression;
 import edu.buffalo.cse.jive.finiteStateMachine.expression.value.IntegerValueExpression;
 import edu.buffalo.cse.jive.finiteStateMachine.expression.value.StringValueExpression;
+import edu.buffalo.cse.jive.finiteStateMachine.models.Event;
 import edu.buffalo.cse.jive.finiteStateMachine.util.Tokenizer;
 
 public class ExpressionFactory {
@@ -70,6 +71,8 @@ public class ExpressionFactory {
 					return new DoubleValueExpression(Double.parseDouble(input));
 				} catch (Exception exception) {
 					if (Tokenizer.idSet.contains(input)) {
+						if (Event.map.containsKey(input))
+							return new VariableExpression(Event.map.get(input), null);
 						return new VariableExpression(input, null);
 					} else if (input.startsWith("<")) {
 						return new VectorExpression(input);

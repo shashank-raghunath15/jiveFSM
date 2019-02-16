@@ -1,7 +1,7 @@
 package edu.buffalo.cse.jive.finiteStateMachine.models;
 
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import edu.buffalo.cse.jive.finiteStateMachine.expression.value.ValueExpression;
@@ -9,7 +9,7 @@ import edu.buffalo.cse.jive.finiteStateMachine.expression.value.ValueExpression;
 public class State implements Serializable {
 
 	private static final long serialVersionUID = -4135264377873998847L;
-	Map<String, ValueExpression> map = new HashMap<>();
+	Map<String, ValueExpression> map = new LinkedHashMap<>();
 
 	@Override
 	public String toString() {

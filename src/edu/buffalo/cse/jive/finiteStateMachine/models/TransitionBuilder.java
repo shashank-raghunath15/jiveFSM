@@ -11,8 +11,11 @@ public class TransitionBuilder {
 		updated = false;
 	}
 
-	public void addInitialState(State state) {
-		this.transitions.append("(*) --> " + "\"" + state.toString() + "\"");
+	public void addInitialState(State state, boolean result) {
+		if (result)
+			this.transitions.append("(*) --> " + "\"" + state.toString() + "\"");
+		else
+			this.transitions.append("(*) --> " + "\"" + state.toString() + "\"" + " #red");
 		addNewLine();
 	}
 
