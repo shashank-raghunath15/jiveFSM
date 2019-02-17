@@ -65,19 +65,30 @@ public abstract class Monitor implements Runnable {
 		return null;
 	}
 
+	public void validate(List<Expression> expressions) {
+		resetStates();
+		rootState.setValid(validate(rootState, null, expressions));
+	}
+
+	private void resetStates() {
+		for (State key : states.keySet()) {
+			for (State state : states.get(key))
+				state.reset();
+		}
+	}
+
 	private boolean validate(State current, State next, List<Expression> expressions) {
 		boolean valid = true;
 		for (Expression expression : expressions) {
 			if (!expression.evaluate(new Context(current, next, states))) {
 				valid = false;
-				break;
 			}
 		}
 		return valid;
 	}
 
 	public void buildTransitions(TransitionBuilder transitionBuilder) {
-		transitionBuilder.addInitialState(rootState, true);
+		transitionBuilder.addInitialState(rootState, rootState.isValid());
 		buildTransitions(rootState, new HashSet<Pair<State, State>>(), transitionBuilder);
 	}
 
@@ -85,33 +96,9 @@ public abstract class Monitor implements Runnable {
 		for (State next : states.get(curr)) {
 			if (visited.add(new Pair<State, State>(curr, next))) {
 				buildTransitions(next, visited, transitionBuilder);
-				transitionBuilder.addTransition(curr, next, true);
+				transitionBuilder.addTransition(curr, next, curr.isValid());
 			}
 		}
-	}
-
-	public void validateAndBuildTransitions(List<Expression> expressions, TransitionBuilder transitionBuilder) {
-		try {
-			transitionBuilder.addInitialState(rootState, validate(rootState, null, expressions));
-		} catch (NullPointerException e) {
-			transitionBuilder.addInitialState(rootState, true);
-		}
-		validateAndBuildTransitions(null, rootState, new HashSet<Pair<State, State>>(), expressions, transitionBuilder);
-	}
-
-	private State validateAndBuildTransitions(State prev, State curr, Set<Pair<State, State>> visited,
-			List<Expression> expressions, TransitionBuilder transitionBuilder) {
-		boolean result = true;
-		for (State next : states.get(curr)) {
-			if (visited.add(new Pair<State, State>(curr, next)))
-				if (!validate(curr, validateAndBuildTransitions(curr, next, visited, expressions, transitionBuilder),
-						expressions))
-					result = false;
-		}
-		if (prev != null) {
-			transitionBuilder.addTransition(prev, curr, result);
-		}
-		return curr;
 	}
 
 	protected void printStates() {

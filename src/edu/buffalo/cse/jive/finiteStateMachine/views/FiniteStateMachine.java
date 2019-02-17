@@ -383,11 +383,13 @@ public class FiniteStateMachine extends ViewPart {
 			try {
 				List<Expression> expressions = parseExpressions(propertyText);
 				if (online) {
-					this.monitor.validateAndBuildTransitions(expressions, this.transitionBuilder);
+					monitor.validate(expressions);
+					monitor.buildTransitions(this.transitionBuilder);
 				} else {
 					monitor = new OfflineMonitor(readAttributes(kvText, paText), incomingStates);
 					monitor.run();
-					monitor.validateAndBuildTransitions(expressions, this.transitionBuilder);
+					monitor.validate(expressions);
+					monitor.buildTransitions(this.transitionBuilder);
 				}
 			} catch (IOException e1) {
 				statusLineManager.setErrorMessage("Unexpected error parsing properties");
@@ -510,7 +512,6 @@ public class FiniteStateMachine extends ViewPart {
 		fileText.setText(fileName);
 		attributeList.removeAll();
 		kvText.setText("");
-		paText.setText("");
 		InputFileParser inputFileParser = new InputFileParser(fileName);
 		Set<String> allAttributes = inputFileParser.getAllFields();
 		this.incomingStates = inputFileParser.getEvents();

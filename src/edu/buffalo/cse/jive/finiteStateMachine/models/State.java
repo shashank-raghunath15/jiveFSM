@@ -10,6 +10,7 @@ public class State implements Serializable {
 
 	private static final long serialVersionUID = -4135264377873998847L;
 	Map<String, ValueExpression> map = new LinkedHashMap<>();
+	private boolean valid = true;
 
 	@Override
 	public String toString() {
@@ -46,4 +47,16 @@ public class State implements Serializable {
 		this.map = map;
 	}
 
+	public boolean isValid() {
+		return valid;
+	}
+
+	public void setValid(boolean valid) {
+		if (this.valid)
+			this.valid = valid;
+	}
+
+	public void reset() {
+		this.valid = true;
+	}
 }

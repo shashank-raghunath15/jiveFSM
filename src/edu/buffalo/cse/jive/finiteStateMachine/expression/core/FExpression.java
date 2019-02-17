@@ -44,6 +44,7 @@ public class FExpression extends UnaryExpression<Expression> {
 				if (expression.evaluate(new Context(curr, evaluate(curr, next, visited, expression, states), states)))
 					result = true;
 		}
+		curr.setValid(result);
 		return curr;
 	}
 }
