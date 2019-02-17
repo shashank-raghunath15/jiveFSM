@@ -1,16 +1,19 @@
 package edu.buffalo.cse.jive.finiteStateMachine.models;
 
-import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import edu.buffalo.cse.jive.finiteStateMachine.expression.value.ValueExpression;
 
-public class State implements Serializable {
+public class State {
 
-	private static final long serialVersionUID = -4135264377873998847L;
-	Map<String, ValueExpression> map = new LinkedHashMap<>();
-	private boolean valid = true;
+	private Map<String, ValueExpression> map;
+	private boolean valid;
+
+	public State() {
+		this.valid = true;
+		this.map = new LinkedHashMap<>();
+	}
 
 	@Override
 	public String toString() {
@@ -58,5 +61,11 @@ public class State implements Serializable {
 
 	public void reset() {
 		this.valid = true;
+	}
+
+	public State copy() {
+		State state = new State();
+		state.setMap(new LinkedHashMap<String, ValueExpression>(map));
+		return state;
 	}
 }

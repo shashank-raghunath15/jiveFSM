@@ -24,7 +24,6 @@ public class GExpression extends UnaryExpression<Expression> {
 
 	public GExpression() {
 		super();
-		this.result = true;
 	}
 
 	public GExpression(Expression expression) {
@@ -33,6 +32,7 @@ public class GExpression extends UnaryExpression<Expression> {
 
 	@Override
 	public Boolean evaluate(Context context) {
+		result = true;
 		evaluate(null, context.getCurrentState(), new HashSet<Pair<State, State>>(), getExpression(),
 				context.getStates());
 		return result;
@@ -41,11 +41,13 @@ public class GExpression extends UnaryExpression<Expression> {
 	private State evaluate(State prev, State curr, Set<Pair<State, State>> visited, Expression expression,
 			Map<State, Set<State>> states) {
 		for (State next : states.get(curr)) {
-			if (visited.add(new Pair<State, State>(curr, next)))
-				result = expression.evaluate(
-						new Context(curr, evaluate(curr, next, visited, expression, states), states)) && result;
+			if (visited.add(new Pair<State, State>(curr, next))) {
+				boolean currentResult = expression
+						.evaluate(new Context(curr, evaluate(curr, next, visited, expression, states), states));
+				curr.setValid(currentResult);
+				result = currentResult && result;
+			}
 		}
-		curr.setValid(result);
 		return curr;
 	}
 }

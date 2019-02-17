@@ -6,8 +6,6 @@ import edu.buffalo.cse.jive.finiteStateMachine.expression.value.ValueExpression;
 public abstract class ArithmeticExpression extends ValueExpression
 		implements IBinaryExpression<ValueExpression, ValueExpression> {
 
-	private static final long serialVersionUID = 4828003833585632580L;
-
 	private ValueExpression expressionA;
 	private ValueExpression expressionB;
 

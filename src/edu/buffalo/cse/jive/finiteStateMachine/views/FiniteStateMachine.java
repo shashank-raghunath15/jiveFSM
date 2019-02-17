@@ -383,11 +383,13 @@ public class FiniteStateMachine extends ViewPart {
 			try {
 				List<Expression> expressions = parseExpressions(propertyText);
 				if (online) {
+					monitor.resetStates();
 					monitor.validate(expressions);
 					monitor.buildTransitions(this.transitionBuilder);
 				} else {
 					monitor = new OfflineMonitor(readAttributes(kvText, paText), incomingStates);
 					monitor.run();
+					monitor.resetStates();
 					monitor.validate(expressions);
 					monitor.buildTransitions(this.transitionBuilder);
 				}
@@ -397,9 +399,11 @@ public class FiniteStateMachine extends ViewPart {
 			}
 		} else {
 			if (online) {
+				monitor.resetStates();
 				this.monitor.buildTransitions(this.transitionBuilder);
 			} else {
 				this.monitor = new OfflineMonitor(readAttributes(kvText, paText), incomingStates);
+				monitor.resetStates();
 				this.monitor.run();
 				this.monitor.buildTransitions(this.transitionBuilder);
 			}

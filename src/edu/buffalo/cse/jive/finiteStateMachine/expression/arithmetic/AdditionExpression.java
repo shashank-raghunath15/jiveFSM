@@ -9,8 +9,6 @@ import edu.buffalo.cse.jive.finiteStateMachine.models.Context;
  */
 public class AdditionExpression extends ArithmeticExpression {
 
-	private static final long serialVersionUID = -9125116236429394780L;
-
 	public AdditionExpression() {
 		super();
 	}

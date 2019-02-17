@@ -9,8 +9,6 @@ import edu.buffalo.cse.jive.finiteStateMachine.models.Context;
  */
 public class DivisionExpression extends ArithmeticExpression {
 
-	private static final long serialVersionUID = 8261862512025495113L;
-
 	public DivisionExpression() {
 		super();
 	}

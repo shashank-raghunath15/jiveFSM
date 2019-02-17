@@ -1,13 +1,10 @@
 package edu.buffalo.cse.jive.finiteStateMachine.expression.value;
 
-import java.io.Serializable;
-
 import edu.buffalo.cse.jive.finiteStateMachine.expression.expression.Expression;
 import edu.buffalo.cse.jive.finiteStateMachine.models.Context;
 
-public abstract class ValueExpression extends Expression implements Comparable<ValueExpression>, Serializable {
+public abstract class ValueExpression extends Expression implements Comparable<ValueExpression> {
 
-	private static final long serialVersionUID = -3413765114274422168L;
 	private Object value;
 
 	public ValueExpression() {

@@ -12,7 +12,6 @@ import edu.buffalo.cse.jive.finiteStateMachine.models.Context;
 public class VariableExpression extends ValueExpression
 		implements Comparable<ValueExpression>, IUnaryExpression<ValueExpression> {
 
-	private static final long serialVersionUID = -4397243041174216675L;
 	private String name;
 	private ValueExpression expression;
 

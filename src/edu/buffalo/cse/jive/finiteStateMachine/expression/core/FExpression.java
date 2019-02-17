@@ -32,6 +32,7 @@ public class FExpression extends UnaryExpression<Expression> {
 
 	@Override
 	public Boolean evaluate(Context context) {
+		result = false;
 		evaluate(null, context.getCurrentState(), new HashSet<Pair<State, State>>(), getExpression(),
 				context.getStates());
 		return result;
@@ -41,10 +42,9 @@ public class FExpression extends UnaryExpression<Expression> {
 			Map<State, Set<State>> states) {
 		for (State next : states.get(curr)) {
 			if (visited.add(new Pair<State, State>(curr, next)) && !result)
-				if (expression.evaluate(new Context(curr, evaluate(curr, next, visited, expression, states), states)))
-					result = true;
+				result = expression.evaluate(
+						new Context(curr, evaluate(curr, next, visited, expression, states), states)) || result;
 		}
-		curr.setValid(result);
 		return curr;
 	}
 }

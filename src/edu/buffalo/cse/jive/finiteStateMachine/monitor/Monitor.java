@@ -13,7 +13,6 @@ import edu.buffalo.cse.jive.finiteStateMachine.models.Context;
 import edu.buffalo.cse.jive.finiteStateMachine.models.Event;
 import edu.buffalo.cse.jive.finiteStateMachine.models.State;
 import edu.buffalo.cse.jive.finiteStateMachine.models.TransitionBuilder;
-import edu.buffalo.cse.jive.finiteStateMachine.util.DeepCopy;
 import edu.buffalo.cse.jive.finiteStateMachine.util.Pair;
 
 public abstract class Monitor implements Runnable {
@@ -40,7 +39,7 @@ public abstract class Monitor implements Runnable {
 	protected boolean buildStates(Event event) {
 		boolean result = false;
 		if (keyFields.contains(event.getField()) || keyFields.contains(getEventKey(event.getField()))) {
-			State newState = DeepCopy.deepCopy(previousState);
+			State newState = previousState.copy();
 			newState.getMap().put(event.getField(), event.getValue());
 			if (!newState.getMap().values().contains(null) && !previousState.getMap().values().contains(null)) {
 				result = states.get(previousState).add(newState);
@@ -66,39 +65,37 @@ public abstract class Monitor implements Runnable {
 	}
 
 	public void validate(List<Expression> expressions) {
-		resetStates();
-		rootState.setValid(validate(rootState, null, expressions));
+		rootState.setValid(validate(rootState, expressions));
 	}
 
-	private void resetStates() {
+	public void resetStates() {
 		for (State key : states.keySet()) {
 			for (State state : states.get(key))
 				state.reset();
 		}
 	}
 
-	private boolean validate(State current, State next, List<Expression> expressions) {
+	private boolean validate(State root, List<Expression> expressions) {
 		boolean valid = true;
 		for (Expression expression : expressions) {
-			if (!expression.evaluate(new Context(current, next, states))) {
-				valid = false;
-			}
+			valid = expression.evaluate(new Context(root, null, states)) && valid;
 		}
 		return valid;
 	}
 
 	public void buildTransitions(TransitionBuilder transitionBuilder) {
 		transitionBuilder.addInitialState(rootState, rootState.isValid());
-		buildTransitions(rootState, new HashSet<Pair<State, State>>(), transitionBuilder);
+		buildTransitions(null, rootState, new HashSet<Pair<State, State>>(), transitionBuilder);
 	}
 
-	private void buildTransitions(State curr, Set<Pair<State, State>> visited, TransitionBuilder transitionBuilder) {
-		for (State next : states.get(curr)) {
-			if (visited.add(new Pair<State, State>(curr, next))) {
-				buildTransitions(next, visited, transitionBuilder);
-				transitionBuilder.addTransition(curr, next, curr.isValid());
-			}
-		}
+	private void buildTransitions(State prev, State curr, Set<Pair<State, State>> visited,
+			TransitionBuilder transitionBuilder) {
+		for (State next : states.get(curr))
+			if (visited.add(new Pair<State, State>(curr, next)))
+				buildTransitions(curr, next, visited, transitionBuilder);
+
+		if (prev != null)
+			transitionBuilder.addTransition(prev, curr, curr.isValid());
 	}
 
 	protected void printStates() {
