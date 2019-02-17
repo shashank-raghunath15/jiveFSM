@@ -23,7 +23,7 @@ class ParserImplTest {
 
 	@Test
 	final void testParse() {
-		String input = new String("G [w == w' -> r == '0']");
+		String input = new String("(w == w' || F[r < r' -> y = 3]) && (r == '0' -> x = 3 )");
 		try {
 			List<String> postFix = parser.convertToPostfix(Tokenizer.tokenize(input));
 			Expression expression = parser.parsePreOrder(parser.buildPrecedenceTree(postFix), null);
