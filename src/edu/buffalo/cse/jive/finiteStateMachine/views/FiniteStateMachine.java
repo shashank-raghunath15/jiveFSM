@@ -108,7 +108,6 @@ public class FiniteStateMachine extends ViewPart {
 	String svg;
 	private Label propertyLabel;
 	private Text propertyText;
-	private Button validateAndBuild;
 	public TransitionBuilder transitionBuilder;
 	private BlockingQueue<Event> incomingStates;
 	private SvgGenerator svgGenerator;
@@ -204,10 +203,6 @@ public class FiniteStateMachine extends ViewPart {
 		buildButton = new Button(evComposite, SWT.PUSH);
 		buildButton.setText("Build");
 		buildButton.setToolTipText("Builds the state diagram");
-
-		validateAndBuild = new Button(evComposite, SWT.PUSH);
-		validateAndBuild.setText("ValidateAndBuild");
-		validateAndBuild.setToolTipText("Validates and Builds states");
 
 		drawButton = new Button(evComposite, SWT.PUSH);
 		drawButton.setText("Draw");
@@ -352,13 +347,6 @@ public class FiniteStateMachine extends ViewPart {
 				Job.getJobManager().cancel("MonitorPortJob");
 			}
 		});
-
-		validateAndBuild.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				validateAndbuildButtonAction(e);
-			}
-		});
 	}
 
 	private Set<String> readAttributes(Text attributes, Text abbreviations) {
@@ -384,45 +372,35 @@ public class FiniteStateMachine extends ViewPart {
 	}
 
 	private List<Expression> parseExpressions(Text propertyText) throws IOException {
-		if (propertyText != null && propertyText.getText().length() > 0) {
-			Parser parser = new ParserImpl();
-			String properties = propertyText.getText().trim();
-			return parser.parse(properties.split(propertyText.getLineDelimiter()));
-		}
-		throw new IllegalArgumentException();
+		Parser parser = new ParserImpl();
+		String properties = propertyText.getText().trim();
+		return parser.parse(properties.split(";"));
 	}
 
 	private void buildButtonAction(SelectionEvent e) {
 		this.transitionBuilder = new TransitionBuilder();
-		if (online) {
-			this.monitor.buildTransitions(this.transitionBuilder);
-		} else {
-			this.monitor = new OfflineMonitor(readAttributes(kvText, paText), incomingStates);
-			this.monitor.run();
-			this.monitor.buildTransitions(this.transitionBuilder);
-		}
-	}
-
-	private void validateAndbuildButtonAction(SelectionEvent e) {
-		this.transitionBuilder = new TransitionBuilder();
-		try {
-			List<Expression> expressions = parseExpressions(propertyText);
-			if (online) {
-				this.monitor.validateAndBuildTransitions(expressions, this.transitionBuilder);
-			} else {
-				monitor = new OfflineMonitor(readAttributes(kvText, paText), incomingStates);
-				monitor.run();
-				monitor.validateAndBuildTransitions(expressions, this.transitionBuilder);
+		if (propertyText != null && propertyText.getText().length() > 0) {
+			try {
+				List<Expression> expressions = parseExpressions(propertyText);
+				if (online) {
+					this.monitor.validateAndBuildTransitions(expressions, this.transitionBuilder);
+				} else {
+					monitor = new OfflineMonitor(readAttributes(kvText, paText), incomingStates);
+					monitor.run();
+					monitor.validateAndBuildTransitions(expressions, this.transitionBuilder);
+				}
+			} catch (IOException e1) {
+				statusLineManager.setErrorMessage("Unexpected error parsing properties");
+				e1.printStackTrace();
 			}
-		} catch (IllegalArgumentException exception) {
-			exception.printStackTrace();
-			statusLineManager.setErrorMessage("Please add a property to validate");
-		} catch (IOException exception) {
-			exception.printStackTrace();
-			statusLineManager.setErrorMessage("Invalid Properties");
-		} catch (Exception exception) {
-			exception.printStackTrace();
-			statusLineManager.setErrorMessage("Unexpected error parsing properties");
+		} else {
+			if (online) {
+				this.monitor.buildTransitions(this.transitionBuilder);
+			} else {
+				this.monitor = new OfflineMonitor(readAttributes(kvText, paText), incomingStates);
+				this.monitor.run();
+				this.monitor.buildTransitions(this.transitionBuilder);
+			}
 		}
 	}
 

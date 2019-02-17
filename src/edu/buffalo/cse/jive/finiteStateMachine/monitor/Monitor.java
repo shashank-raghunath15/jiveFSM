@@ -91,7 +91,11 @@ public abstract class Monitor implements Runnable {
 	}
 
 	public void validateAndBuildTransitions(List<Expression> expressions, TransitionBuilder transitionBuilder) {
-		transitionBuilder.addInitialState(rootState, validate(rootState, null, expressions));
+		try {
+			transitionBuilder.addInitialState(rootState, validate(rootState, null, expressions));
+		} catch (NullPointerException e) {
+			transitionBuilder.addInitialState(rootState, true);
+		}
 		validateAndBuildTransitions(null, rootState, new HashSet<Pair<State, State>>(), expressions, transitionBuilder);
 	}
 
