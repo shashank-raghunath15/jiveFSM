@@ -8,7 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -349,10 +349,10 @@ public class FiniteStateMachine extends ViewPart {
 		});
 	}
 
-	private Set<String> readAttributes(Text attributes, Text abbreviations) {
-		Set<String> keyAttributes;
+	private List<String> readAttributes(Text attributes, Text abbreviations) {
+		List<String> keyAttributes;
 		if (attributes != null && attributes.getText().length() > 0) {
-			keyAttributes = new HashSet<String>();
+			keyAttributes = new ArrayList<String>();
 			String selected = attributes.getText();
 			for (String attribute : selected.split(",")) {
 				keyAttributes.add(attribute.trim());

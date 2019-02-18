@@ -17,13 +17,13 @@ import edu.buffalo.cse.jive.finiteStateMachine.util.Pair;
 
 public abstract class Monitor implements Runnable {
 
-	private Set<String> keyFields;
+	private List<String> keyFields;
 	private BlockingQueue<Event> source;
 	private Map<State, Set<State>> states;
 	private State rootState;
 	private State previousState;
 
-	public Monitor(Set<String> keyFields, BlockingQueue<Event> source) {
+	public Monitor(List<String> keyFields, BlockingQueue<Event> source) {
 		this.keyFields = keyFields;
 		this.source = source;
 		this.states = new HashMap<State, Set<State>>();
@@ -108,11 +108,11 @@ public abstract class Monitor implements Runnable {
 		}
 	}
 
-	public Set<String> getKeyFields() {
+	public List<String> getKeyFields() {
 		return keyFields;
 	}
 
-	public void setKeyFields(Set<String> keyFields) {
+	public void setKeyFields(List<String> keyFields) {
 		this.keyFields = keyFields;
 	}
 
